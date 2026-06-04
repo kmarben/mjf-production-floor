@@ -53,6 +53,8 @@
     #cfg .cfg-btn { font-family:var(--font); font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:6px 16px; border:none; border-radius:5px; cursor:pointer; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#000; white-space:nowrap; }
     #cfg-toggle { font-family:var(--font); font-size:.65rem; font-weight:600; padding:3px 8px; border:1px solid var(--border2); border-radius:3px; cursor:pointer; background:var(--surface2); color:var(--text-dim); white-space:nowrap; flex-shrink:0; transition:all .15s; }
     #cfg-toggle:hover { border-color:var(--accent2); color:var(--accent2); }
+    .help-btn { font-family:var(--font); font-size:.65rem; font-weight:600; padding:3px 9px; border:1px solid rgba(0,200,255,.3); border-radius:3px; cursor:pointer; background:var(--surface2); color:var(--accent); white-space:nowrap; flex-shrink:0; transition:all .15s; }
+    .help-btn:hover { border-color:var(--accent); background:rgba(0,200,255,.1); }
 
     /* ── Header — improved for TV readability ── */
     header { background:var(--surface); border-bottom:2px solid var(--border2); padding:10px 20px; display:flex; align-items:center; gap:14px; flex-shrink:0; flex-wrap:wrap; }
@@ -473,6 +475,7 @@
   <div class="upd" id="upd">Not loaded</div>
   <button class="refresh" onclick="loadData()">&#8635;</button>
   <button class="fs-btn" onclick="toggleFullscreen()" title="Toggle fullscreen">&#x26F6;</button>
+  <button class="help-btn" onclick="openHelp()" title="Open operator quick reference">&#x2139; Help</button>
   <button id="cfg-toggle" onclick="toggleCfg()">&#9881; Token</button>
 </header>
 
@@ -714,6 +717,12 @@ function toggleCfg() {
 function collapseCfg() {
   cfgVisible = false;
   document.getElementById('cfg').classList.add('collapsed');
+}
+
+function openHelp() {
+  // Opens the operator quick reference PDF in a new tab
+  // Operators can view, scroll, and print directly from the browser
+  window.open('MJF-Operator-Quick-Reference.pdf', '_blank');
 }
 
 // ── Fullscreen ────────────────────────────────────────────────────────────────
