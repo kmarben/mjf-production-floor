@@ -24,196 +24,342 @@
       --text-mid:   #8892aa;
       --font:       'Manrope', system-ui, sans-serif;
       --mono:       'Share Tech Mono', monospace;
-      --row-h:      72px;
-      --label-w:    200px;
+      --row-h:      96px;
+      --label-w:    260px;
 
       /* Material colors */
-      --mat-tpu:    #90ee90;   /* light green */
-      --mat-pa12:   #ffd700;   /* yellow */
-      --mat-other:  #4f6fff;   /* default blue */
+      --mat-tpu:    #90ee90;
+      --mat-pa12:   #ffd700;
+      --mat-other:  #4f6fff;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body { background: var(--bg); color: var(--text); font-family: var(--font); display: flex; flex-direction: column; overflow: hidden; }
 
-    /* ── Config bar (collapses after load) ── */
+    /* ── Config bar ── */
     #cfg {
       background: linear-gradient(90deg,rgba(79,111,255,.12),rgba(0,200,255,.12));
       border-bottom: 1px solid var(--accent2);
       padding: 8px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-shrink: 0;
+      display: flex; align-items: center; gap: 12px; flex-shrink: 0;
       overflow: hidden;
       transition: max-height .35s ease, padding .35s ease, opacity .35s ease;
       max-height: 60px;
     }
-    #cfg.collapsed {
-      max-height: 0;
-      padding-top: 0;
-      padding-bottom: 0;
-      opacity: 0;
-      pointer-events: none;
-    }
+    #cfg.collapsed { max-height:0; padding-top:0; padding-bottom:0; opacity:0; pointer-events:none; }
     #cfg label { font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--accent2); white-space:nowrap; }
     #cfg input { flex:1; background:var(--surface2); border:1px solid var(--border2); border-radius:5px; padding:6px 11px; color:var(--text); font-family:var(--mono); font-size:.8rem; min-width:0; }
     #cfg input:focus { outline:none; border-color:var(--accent); }
     #cfg .cfg-btn { font-family:var(--font); font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:6px 16px; border:none; border-radius:5px; cursor:pointer; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#000; white-space:nowrap; }
-    #cfg .cfg-show { font-family:var(--font); font-size:.68rem; font-weight:600; padding:4px 10px; border:1px solid var(--border2); border-radius:4px; cursor:pointer; background:var(--surface2); color:var(--text-dim); white-space:nowrap; }
     #cfg-toggle { font-family:var(--font); font-size:.65rem; font-weight:600; padding:3px 8px; border:1px solid var(--border2); border-radius:3px; cursor:pointer; background:var(--surface2); color:var(--text-dim); white-space:nowrap; flex-shrink:0; transition:all .15s; }
     #cfg-toggle:hover { border-color:var(--accent2); color:var(--accent2); }
 
-    /* ── Header ── */
-    header { background:var(--surface); border-bottom:1px solid var(--border); padding:8px 20px; display:flex; align-items:center; gap:12px; flex-shrink:0; flex-wrap:wrap; }
-    .logo { width:26px; height:26px; background:linear-gradient(135deg,var(--accent2),var(--accent)); clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); flex-shrink:0; }
-    h1 { font-size:1rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    /* ── Header — improved for TV readability ── */
+    header { background:var(--surface); border-bottom:2px solid var(--border2); padding:10px 20px; display:flex; align-items:center; gap:14px; flex-shrink:0; flex-wrap:wrap; }
+    .logo { width:32px; height:32px; background:linear-gradient(135deg,var(--accent2),var(--accent)); clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); flex-shrink:0; }
+    h1 { font-size:1.15rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
     h1 span { color:var(--accent); }
     .hdr-sep { flex:1; }
-    .metrics { display:flex; gap:6px; }
-    .metric { background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:5px 12px; text-align:center; }
-    .metric-val { font-size:1rem; font-weight:800; color:var(--accent); line-height:1; }
-    .metric-lbl { font-size:.58rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); margin-top:2px; }
+
+    /* Metrics — larger and more dashboard-like */
+    .metrics { display:flex; gap:8px; }
+    .metric {
+      background:var(--surface2);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:8px 18px;
+      text-align:center;
+      min-width:80px;
+      position:relative;
+      overflow:hidden;
+    }
+    .metric::before {
+      content:'';
+      position:absolute;
+      bottom:0; left:0; right:0;
+      height:2px;
+    }
+    .metric-active::before  { background:var(--green); }
+    .metric-sched::before   { background:var(--accent2); }
+    .metric-queue::before   { background:var(--yellow); }
+    .metric-val { font-size:1.8rem; font-weight:800; line-height:1; }
+    .metric-active .metric-val  { color:var(--green); }
+    .metric-sched  .metric-val  { color:var(--accent); }
+    .metric-queue  .metric-val  { color:var(--yellow); }
+    .metric-queue-urgent .metric-val { color:var(--red) !important; }
+    .metric-lbl { font-size:.58rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); margin-top:3px; }
 
     /* Material legend */
-    .legend { display:flex; align-items:center; gap:8px; }
-    .leg-item { display:flex; align-items:center; gap:4px; font-size:.65rem; font-weight:600; color:var(--text-mid); }
-    .leg-swatch { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+    .legend { display:flex; align-items:center; gap:14px; padding:5px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:5px; }
+    .leg-item { display:flex; flex-direction:column; align-items:center; gap:3px; }
+    .leg-count { font-size:1rem; font-weight:800; color:var(--text); font-family:var(--mono); line-height:1; }
+    .leg-swatch { width:24px; height:6px; border-radius:2px; flex-shrink:0; }
+    .leg-label { font-size:.58rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-dim); }
 
     .view-toggle { display:flex; background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:3px; gap:3px; }
-    .vbtn { font-family:var(--font); font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:4px 12px; border:none; border-radius:3px; cursor:pointer; background:transparent; color:var(--text-dim); transition:all .15s; }
+    .vbtn { font-family:var(--font); font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:5px 14px; border:none; border-radius:3px; cursor:pointer; background:transparent; color:var(--text-dim); transition:all .15s; }
     .vbtn.active { background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#000; }
     .nav-btns { display:flex; align-items:center; gap:5px; }
-    .nbtn { font-family:var(--font); font-size:.68rem; font-weight:600; padding:4px 10px; border:1px solid var(--border2); border-radius:4px; cursor:pointer; background:var(--surface2); color:var(--text-mid); transition:all .15s; }
+    .nbtn { font-family:var(--font); font-size:.68rem; font-weight:600; padding:5px 11px; border:1px solid var(--border2); border-radius:4px; cursor:pointer; background:var(--surface2); color:var(--text-mid); transition:all .15s; }
     .nbtn:hover { border-color:var(--accent); color:var(--accent); }
     .nbtn.today { border-color:var(--accent2); color:var(--accent2); }
-    .date-badge { font-family:var(--mono); font-size:.75rem; color:var(--text-mid); background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:4px 10px; white-space:nowrap; }
-    .clock { font-family:var(--mono); font-size:.82rem; color:var(--accent); }
+    .date-badge { font-family:var(--mono); font-size:.78rem; color:var(--text); background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:5px 12px; white-space:nowrap; font-weight:600; }
+    .clock { font-family:var(--mono); font-size:.9rem; color:var(--accent); font-weight:700; }
 
     /* Connection status */
-    .conn-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-    .conn-ok   { background:var(--green); box-shadow:0 0 5px var(--green); }
-    .conn-err  { background:var(--red);   box-shadow:0 0 5px var(--red); animation:pulse-r 1.2s infinite; }
-    .conn-stale{ background:var(--yellow);box-shadow:0 0 5px var(--yellow); }
+    .conn-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .conn-ok   { background:var(--green); box-shadow:0 0 6px var(--green); }
+    .conn-err  { background:var(--red);   box-shadow:0 0 6px var(--red); animation:pulse-r 1.2s infinite; }
+    .conn-stale{ background:var(--yellow);box-shadow:0 0 6px var(--yellow); }
     @keyframes pulse-r { 0%,100%{opacity:1} 50%{opacity:.4} }
     .upd { font-family:var(--mono); font-size:.62rem; color:var(--text-dim); }
-
-    .refresh { font-family:var(--font); font-size:.68rem; font-weight:600; padding:4px 10px; border:1px solid var(--border); border-radius:4px; cursor:pointer; background:var(--surface2); color:var(--text-dim); transition:all .15s; }
+    .refresh { font-family:var(--font); font-size:.68rem; font-weight:600; padding:5px 11px; border:1px solid var(--border); border-radius:4px; cursor:pointer; background:var(--surface2); color:var(--text-dim); transition:all .15s; }
     .refresh:hover { border-color:var(--accent); color:var(--accent); }
-
-    /* Fullscreen button */
-    .fs-btn { font-family:var(--font); font-size:.68rem; font-weight:600; padding:4px 10px; border:1px solid var(--border2); border-radius:4px; cursor:pointer; background:var(--surface2); color:var(--text-dim); transition:all .15s; }
+    .fs-btn { font-family:var(--font); font-size:.68rem; font-weight:600; padding:5px 11px; border:1px solid var(--border2); border-radius:4px; cursor:pointer; background:var(--surface2); color:var(--text-dim); transition:all .15s; }
     .fs-btn:hover { border-color:var(--accent); color:var(--accent); }
 
     /* ── Gantt ── */
-    /* ── Gantt scroll structure ──
-       The gantt uses two scroll containers:
-       - #gantt-scroll handles BOTH horizontal and vertical scrolling
-       - .pr-label and .tl-label-spacer use position:sticky; left:0
-         so labels stay pinned while the timeline scrolls horizontally
-       - #gantt has no min-width constraint — the timeline areas handle their own width
-    */
     #gantt-wrap { flex:1; overflow:hidden; display:flex; flex-direction:column; }
     #gantt-scroll { flex:1; overflow:auto; }
     #gantt { display:flex; flex-direction:column; }
 
-    /* Timeline header */
-    .tl-header { display:flex; position:sticky; top:0; z-index:20; background:var(--bg); border-bottom:1px solid var(--border2); }
+    /* Timeline header — improved time axis */
+    .tl-header { display:flex; position:sticky; top:0; z-index:20; background:var(--bg); border-bottom:2px solid var(--border2); }
     .tl-label-spacer {
       width:var(--label-w); flex-shrink:0;
       background:var(--surface); border-right:1px solid var(--border2); border-bottom:1px solid var(--border2);
-      display:flex; align-items:center; padding:0 14px;
+      display:flex; align-items:center; padding:0 16px;
       position:sticky; left:0; z-index:25;
     }
-    .tl-label-spacer span { font-size:.62rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); }
+    .tl-label-spacer span { font-size:.65rem; font-weight:800; letter-spacing:.15em; text-transform:uppercase; color:var(--text-dim); }
     .tl-slots { display:flex; flex:1; min-width:900px; }
-    .tl-slot { flex:1; text-align:center; padding:5px 2px; border-right:1px solid var(--border); background:var(--surface); min-width:0; }
-    .tl-slot.today-col { background:rgba(79,111,255,.08); }
+    .tl-slot { flex:1; text-align:center; padding:7px 2px; border-right:1px solid var(--border); background:var(--surface); min-width:0; transition:background .3s; }
+    .tl-slot.today-col { background:rgba(79,111,255,.06); }
+    .tl-slot.current-hour {
+      background:rgba(68,138,255,.15);
+      border-right:1px solid rgba(68,138,255,.5);
+      border-left:1px solid rgba(68,138,255,.5);
+    }
     .tl-slot.clickable:hover { background:rgba(79,111,255,.18); cursor:pointer; }
-    .tl-slot-main { font-size:.68rem; font-weight:700; color:var(--text-mid); line-height:1.2; }
-    .tl-slot-sub  { font-size:.58rem; font-weight:600; color:var(--text-dim); letter-spacing:.05em; line-height:1.2; }
+    .tl-slot-main { font-size:.78rem; font-weight:700; color:var(--text-mid); line-height:1.2; }
+    .tl-slot-main.current-hour-text { color:var(--blue); font-size:.86rem; font-weight:800; }
+    .tl-slot-sub  { font-size:.6rem; font-weight:600; color:var(--text-dim); letter-spacing:.05em; line-height:1.2; }
+    .tl-slot-sub.current-hour-text { color:rgba(68,138,255,.8); }
 
-    /* Printer row */
-    .printer-row { display:flex; border-bottom:1px solid var(--border); }
+    /* Printer row — colored left border by status */
+    .printer-row { display:flex; border-bottom:1px solid var(--border); border-left:5px solid transparent; transition:border-left-color .3s; }
+    .printer-row.row-ready { border-left-color:var(--green); }
+    .printer-row.row-maint { border-left-color:var(--yellow); }
+    .printer-row.row-down  { border-left-color:var(--red); }
+    .printer-row.row-idle  { border-left-color:rgba(255,61,87,.5); }
+
+    /* Printer label — larger text for TV */
     .pr-label {
       width:var(--label-w); flex-shrink:0;
       background:var(--surface); border-right:1px solid var(--border2);
-      padding:8px 14px; display:flex; flex-direction:column; gap:4px; justify-content:center;
+      padding:10px 16px; display:flex; flex-direction:column; gap:5px; justify-content:center;
       position:sticky; left:0; z-index:15;
-      /* Subtle right shadow to show it's pinned */
-      box-shadow:3px 0 8px rgba(0,0,0,.4);
+      box-shadow:4px 0 12px rgba(0,0,0,.5);
     }
-    .pr-name { font-size:.78rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
-    .pr-sub  { font-size:.58rem; color:var(--text-dim); font-weight:500; }
-    .pr-status-badge { font-size:.58rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; padding:2px 6px; border-radius:3px; display:inline-block; width:fit-content; }
-    .pr-builds { font-size:.58rem; color:var(--text-dim); }
-    .status-ready { color:var(--green);  background:rgba(0,230,118,.1);  border:1px solid rgba(0,230,118,.25); }
-    .status-maint { color:var(--yellow); background:rgba(255,179,0,.1);  border:1px solid rgba(255,179,0,.25); }
-    .status-down  { color:var(--red);    background:rgba(255,61,87,.1);  border:1px solid rgba(255,61,87,.25); }
-    .status-idle  { color:var(--text-dim); background:rgba(90,100,128,.1); border:1px solid rgba(90,100,128,.25); }
+    .pr-name { font-size:1rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+    .pr-sub  { font-size:.62rem; color:var(--text-dim); font-weight:500; }
+    .pr-status-badge { font-size:.64rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 7px; border-radius:3px; display:inline-block; width:fit-content; cursor:pointer; transition:filter .15s; }
+    .pr-status-badge:hover { filter:brightness(1.3); }
+    .pr-builds { font-size:.68rem; color:var(--text); font-weight:700; }
+    .status-ready { color:var(--green);  background:rgba(0,230,118,.12); border:1px solid rgba(0,230,118,.3); }
+    .status-maint { color:var(--yellow); background:rgba(255,179,0,.12); border:1px solid rgba(255,179,0,.3); }
+    .status-down  { color:var(--red);    background:rgba(255,61,87,.12); border:1px solid rgba(255,61,87,.3); }
+    .status-idle  { color:var(--red);    background:rgba(255,61,87,.12); border:1px solid rgba(255,61,87,.3); animation:idle-blink 2s ease-in-out infinite; }
+    @keyframes idle-blink { 0%,100%{opacity:1} 50%{opacity:.6} }
 
-    /* Timeline area — min-width drives horizontal scroll */
+    /* Status popup */
+    #status-popup { position:fixed; background:var(--surface2); border:1px solid var(--border2); border-radius:6px; padding:6px; z-index:999; min-width:200px; box-shadow:0 8px 32px rgba(0,0,0,.7); display:none; flex-direction:column; gap:4px; }
+    #status-popup.open { display:flex; }
+    .status-popup-title { font-size:.62rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); padding:3px 7px 7px; border-bottom:1px solid var(--border); margin-bottom:2px; }
+    .status-opt { font-family:var(--font); font-size:.78rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:9px 11px; border:1px solid transparent; border-radius:4px; cursor:pointer; transition:all .15s; text-align:left; background:transparent; width:100%; display:flex; align-items:center; gap:9px; }
+    .status-opt:hover { background:var(--surface); }
+    .status-opt.opt-ready { color:var(--green); }
+    .status-opt.opt-ready:hover { border-color:rgba(0,230,118,.3); }
+    .status-opt.opt-maint { color:var(--yellow); }
+    .status-opt.opt-maint:hover { border-color:rgba(255,179,0,.3); }
+    .status-opt.opt-down  { color:var(--red); }
+    .status-opt.opt-down:hover  { border-color:rgba(255,61,87,.3); }
+    .status-opt.current { opacity:.35; cursor:default; pointer-events:none; }
+    .status-opt-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .pr-label-wrap { position:relative; }
+
+    /* Timeline area */
     .pr-timeline { flex:1; position:relative; height:var(--row-h); overflow:hidden; background:var(--surface3); min-width:900px; }
-    .pr-timeline.down-bg { background:repeating-linear-gradient(45deg,rgba(255,61,87,.04),rgba(255,61,87,.04) 4px,transparent 4px,transparent 14px); }
-
-    /* Idle state */
-    .idle-label { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:.62rem; color:var(--text-dim); letter-spacing:.1em; opacity:.5; pointer-events:none; }
+    .pr-timeline.down-bg { background:repeating-linear-gradient(45deg,rgba(255,61,87,.04),rgba(255,61,87,.04) 5px,transparent 5px,transparent 15px); }
 
     /* Grid lines */
     .grid-lines { position:absolute; inset:0; display:flex; pointer-events:none; }
-    .grid-line { flex:1; border-right:1px solid rgba(42,47,66,.6); }
+    .grid-line { flex:1; border-right:1px solid rgba(42,47,66,.5); }
 
-    /* Now line */
-    .now-line { position:absolute; top:0; bottom:0; width:2px; background:var(--blue); z-index:10; pointer-events:none; transform:translateX(-50%); }
-    .now-dot  { position:absolute; top:-4px; left:50%; transform:translateX(-50%); width:8px; height:8px; background:var(--blue); border-radius:50%; box-shadow:0 0 8px var(--blue); }
+    /* Now line — more prominent */
+    .now-line { position:absolute; top:0; bottom:0; width:2px; background:var(--blue); z-index:10; pointer-events:none; transform:translateX(-50%); box-shadow:0 0 8px rgba(68,138,255,.6); }
+    .now-dot  { position:absolute; top:-5px; left:50%; transform:translateX(-50%); width:10px; height:10px; background:var(--blue); border-radius:50%; box-shadow:0 0 10px var(--blue); }
+    .now-label { position:absolute; top:4px; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:.55rem; color:var(--blue); white-space:nowrap; background:rgba(13,15,20,.8); padding:1px 4px; border-radius:2px; }
 
-    /* Job block */
-    .job-block { position:absolute; top:6px; height:calc(var(--row-h) - 12px); border-radius:4px; overflow:hidden; cursor:pointer; transition:filter .15s, transform .1s; z-index:5; min-width:4px; }
-    .job-block:hover { filter:brightness(1.2); transform:scaleY(1.04); z-index:8; }
-    .job-block.past { opacity:.4; }
-    .job-block.active { box-shadow:0 0 0 2px var(--blue),0 0 12px rgba(68,138,255,.4); }
-    .job-block.continues-right::after { content:'▶'; position:absolute; right:3px; top:50%; transform:translateY(-50%); font-size:.55rem; color:rgba(255,255,255,.7); }
-    .job-block.continues-left::before { content:'◀'; position:absolute; left:3px; top:50%; transform:translateY(-50%); font-size:.55rem; color:rgba(255,255,255,.7); }
+    /* Job blocks — larger text for TV */
+    .job-block { position:absolute; top:7px; height:calc(var(--row-h) - 14px); border-radius:5px; overflow:hidden; cursor:pointer; transition:filter .15s, transform .1s; z-index:5; min-width:4px; }
+    .job-block:hover { filter:brightness(1.25); transform:scaleY(1.05); z-index:8; }
+    .job-block.past { opacity:.35; }
+
+    /* Active job — pulsing glow animation */
+    .job-block.active {
+      box-shadow:0 0 0 2px var(--blue), 0 0 20px rgba(68,138,255,.5);
+      animation:active-pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes active-pulse {
+      0%,100% { box-shadow:0 0 0 2px var(--blue),0 0 16px rgba(68,138,255,.4); }
+      50%      { box-shadow:0 0 0 2px var(--blue),0 0 32px rgba(68,138,255,.9); }
+    }
+    .job-block.continues-right::after { content:'▶'; position:absolute; right:5px; top:50%; transform:translateY(-50%); font-size:.65rem; color:rgba(255,255,255,.75); }
+    .job-block.continues-left::before { content:'◀'; position:absolute; left:5px; top:50%; transform:translateY(-50%); font-size:.65rem; color:rgba(255,255,255,.75); }
     .job-block.continues-left  { border-top-left-radius:0; border-bottom-left-radius:0; border-left:3px solid rgba(255,255,255,.4); }
     .job-block.continues-right { border-top-right-radius:0; border-bottom-right-radius:0; border-right:3px solid rgba(255,255,255,.4); }
-    .job-inner { height:100%; display:flex; flex-direction:column; justify-content:center; padding:0 8px; overflow:hidden; }
-    .job-name  { font-size:.7rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#000; text-shadow:0 1px 2px rgba(255,255,255,.2); }
-    .job-times { font-size:.58rem; color:rgba(0,0,0,.65); white-space:nowrap; margin-top:1px; font-family:var(--mono); }
+    .job-inner { height:100%; display:flex; flex-direction:column; justify-content:center; padding:0 10px; overflow:hidden; }
+    .job-name  { font-size:.86rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#000; }
+    .job-times { font-size:.66rem; color:rgba(0,0,0,.7); white-space:nowrap; margin-top:2px; font-family:var(--mono); font-weight:600; }
 
-    /* Material colors for job blocks */
+    /* Critical priority override — always red regardless of material */
+    .job-block.critical { background:linear-gradient(135deg,#8b0000,#df2f4a) !important; }
+    .job-block.critical .job-name  { color:#fff; }
+    .job-block.critical .job-times { color:rgba(255,255,255,.75); }
+    .job-block.pending { opacity:0.6; animation:pending-pulse 1.5s ease-in-out infinite; border:2px dashed rgba(255,255,255,.4) !important; }
+    @keyframes pending-pulse { 0%,100%{opacity:0.6} 50%{opacity:0.9} }
+
+    /* Completed job blocks */
+    .job-block.completed-block {
+      opacity: 0.35;
+      background-image: repeating-linear-gradient(
+        45deg,
+        rgba(0,0,0,0.15),
+        rgba(0,0,0,0.15) 3px,
+        transparent 3px,
+        transparent 9px
+      ) !important;
+    }
+    .job-block.completed-block:hover { opacity: 0.6; }
     .mat-tpu   { background:linear-gradient(135deg,#5cb85c,#90ee90); }
     .mat-pa12  { background:linear-gradient(135deg,#e6b800,#ffd700); }
     .mat-other { background:linear-gradient(135deg,#1a5fd6,#4f6fff); }
 
     /* ── Queue ── */
-    #queue-section { flex-shrink:0; background:var(--surface); border-top:1px solid var(--border2); padding:8px 20px; }
-    .queue-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
-    .queue-title  { font-size:.72rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--text-mid); }
-    .queue-count  { font-size:.65rem; font-weight:700; background:var(--surface2); border:1px solid var(--border2); border-radius:10px; padding:1px 7px; color:var(--text-dim); }
-    .queue-items  { display:flex; flex-wrap:wrap; gap:5px; max-height:52px; overflow-y:auto; }
-    .queue-chip   { font-size:.68rem; font-weight:600; padding:3px 9px; border-radius:4px; border:1px solid var(--border2); background:var(--surface2); color:var(--text-mid); cursor:pointer; transition:all .15s; white-space:nowrap; }
+    #queue-section { flex-shrink:0; background:var(--surface); border-top:2px solid var(--border2); padding:10px 20px; }
+    .queue-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+    .queue-title  { font-size:.82rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--text-mid); }
+    .queue-count  { font-size:.72rem; font-weight:700; background:var(--surface2); border:1px solid var(--border2); border-radius:10px; padding:2px 9px; color:var(--text-dim); }
+    .queue-groups { display:flex; flex-direction:column; gap:6px; max-height:100px; overflow-y:auto; }
+    .queue-priority-group { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .queue-group-label { font-size:.6rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; padding:2px 7px; border-radius:3px; white-space:nowrap; flex-shrink:0; min-width:62px; text-align:center; }
+    .queue-items  { display:flex; flex-wrap:wrap; gap:5px; }
+    .queue-chip   { font-size:.72rem; font-weight:600; padding:4px 10px; border-radius:4px; border:1px solid var(--border2); background:var(--surface2); color:var(--text-mid); cursor:pointer; transition:all .15s; white-space:nowrap; }
     .queue-chip:hover { border-color:var(--accent2); color:var(--accent); }
     .queue-chip.mat-tpu-chip  { border-color:rgba(144,238,144,.4); color:#5cb85c; }
     .queue-chip.mat-pa12-chip { border-color:rgba(255,215,0,.4);   color:#e6b800; }
-    .queue-empty  { font-family:var(--mono); font-size:.7rem; color:var(--text-dim); }
+    .queue-priority-badge { font-size:.58rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; padding:1px 5px; border-radius:2px; flex-shrink:0; }
+    .queue-empty  { font-family:var(--mono); font-size:.72rem; color:var(--text-dim); }
+
+    /* Add Job button */
+    .add-job-btn { font-family:var(--font); font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:4px 12px; border:1px solid rgba(79,111,255,.4); border-radius:4px; cursor:pointer; background:rgba(79,111,255,.1); color:var(--accent2); transition:all .15s; margin-left:auto; }
+    .add-job-btn:hover { background:rgba(79,111,255,.2); border-color:var(--accent2); }
+
+    /* Add Job Modal */
+    .aj-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; }
+    .aj-overlay.open { display:block; }
+    .aj-modal { display:none; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); width:440px; max-width:95vw; background:var(--surface); border:2px solid var(--border2); border-radius:10px; z-index:201; box-shadow:0 24px 64px rgba(0,0,0,.7); flex-direction:column; }
+    .aj-modal.open { display:flex; }
+    .aj-header { padding:18px 22px; border-bottom:2px solid var(--border2); display:flex; align-items:center; justify-content:space-between; background:var(--surface2); border-radius:8px 8px 0 0; }
+    .aj-title { font-size:1.05rem; font-weight:800; letter-spacing:.04em; color:var(--text); }
+    .aj-body { padding:20px 22px; display:flex; flex-direction:column; gap:16px; }
+    .aj-field { display:flex; flex-direction:column; gap:6px; }
+    .aj-label { font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); }
+    .aj-req { color:var(--red); }
+    .aj-input { background:var(--surface2); border:1px solid var(--border2); border-radius:6px; padding:10px 14px; color:var(--text); font-family:var(--font); font-size:.9rem; font-weight:600; transition:border-color .15s; }
+    .aj-input:focus { outline:none; border-color:var(--accent2); }
+    .aj-options { display:flex; gap:6px; flex-wrap:wrap; }
+    .aj-opt { font-family:var(--font); font-size:.78rem; font-weight:700; padding:7px 14px; border:1px solid var(--border2); border-radius:5px; cursor:pointer; background:var(--surface2); color:var(--text-mid); transition:all .15s; }
+    .aj-opt:hover { border-color:var(--accent2); color:var(--accent); }
+    .aj-opt.selected { background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#000; border-color:transparent; }
+    .aj-critical.selected { background:linear-gradient(135deg,#8b0000,#df2f4a); color:#fff; }
+    .aj-high.selected     { background:linear-gradient(135deg,#b45309,#fdab3d); color:#000; }
+    .aj-medium.selected   { background:linear-gradient(135deg,#1a5fd6,#579bfc); color:#fff; }
+    .aj-low.selected      { background:linear-gradient(135deg,#025c37,#037f4c); color:#fff; }
+    .aj-critical { color:#df2f4a; border-color:rgba(223,47,74,.3); }
+    .aj-high     { color:#fdab3d; border-color:rgba(253,171,61,.3); }
+    .aj-medium   { color:#579bfc; border-color:rgba(87,155,252,.3); }
+    .aj-low      { color:#037f4c; border-color:rgba(3,127,76,.3); }
+    .aj-error { font-family:var(--mono); font-size:.75rem; color:var(--red); padding:8px 12px; background:rgba(255,61,87,.08); border:1px solid rgba(255,61,87,.2); border-radius:5px; }
+    .aj-actions { display:flex; gap:8px; }
 
     /* ── Detail Panel ── */
-    #detail-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100; }
-    #detail-panel { position:fixed; right:0; top:0; bottom:0; width:320px; background:var(--surface); border-left:1px solid var(--border2); z-index:101; overflow-y:auto; display:none; flex-direction:column; }
+    #detail-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:100; }
+    #detail-panel { position:fixed; right:0; top:0; bottom:0; width:360px; background:var(--surface); border-left:2px solid var(--border2); z-index:101; overflow-y:auto; display:none; flex-direction:column; }
     #detail-panel.open, #detail-overlay.open { display:flex; }
-    .dp-header { padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
-    .dp-title  { font-size:.95rem; font-weight:800; line-height:1.3; }
-    .dp-mat    { font-size:.65rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px 8px; border-radius:3px; display:inline-block; margin-top:4px; }
-    .dp-close  { background:none; border:none; cursor:pointer; color:var(--text-dim); font-size:1.1rem; padding:2px 5px; border-radius:3px; flex-shrink:0; }
-    .dp-close:hover { color:var(--text); background:var(--surface2); }
-    .dp-body   { padding:14px 18px; flex:1; display:flex; flex-direction:column; gap:12px; }
-    .dp-sec    { font-size:.6rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-dim); margin-bottom:5px; }
-    .dp-row    { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--border); }
+    .dp-header { padding:20px 22px; border-bottom:2px solid var(--border2); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; background:var(--surface2); }
+    .dp-title  { font-size:1.2rem; font-weight:800; line-height:1.3; color:var(--text); }
+    .dp-mat    { font-size:.72rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; padding:4px 10px; border-radius:4px; display:inline-block; margin-top:6px; }
+    .dp-close  { background:none; border:1px solid var(--border2); cursor:pointer; color:var(--text-mid); font-size:1rem; padding:5px 10px; border-radius:4px; flex-shrink:0; transition:all .15s; font-weight:700; }
+    .dp-close:hover { color:var(--text); background:var(--surface); border-color:var(--text-dim); }
+    .dp-body   { padding:18px 22px; flex:1; display:flex; flex-direction:column; gap:16px; overflow-y:auto; }
+    .dp-sec    { font-size:.68rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border2); }
+    .dp-row    { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
     .dp-row:last-child { border-bottom:none; }
-    .dp-lbl    { font-size:.68rem; color:var(--text-dim); }
-    .dp-val    { font-size:.74rem; font-weight:600; color:var(--text); font-family:var(--mono); }
-    .dp-progress { height:4px; background:var(--border); border-radius:2px; overflow:hidden; margin-top:6px; }
-    .dp-fill   { height:100%; background:linear-gradient(90deg,var(--accent2),var(--accent)); border-radius:2px; }
+    .dp-lbl    { font-size:.8rem; color:var(--text-mid); font-weight:500; }
+    .dp-val    { font-size:.88rem; font-weight:700; color:var(--text); font-family:var(--mono); }
+    .dp-val-accent { color:var(--accent) !important; }
+    .dp-val-green  { color:var(--green) !important; }
+    .dp-progress { height:8px; background:var(--border); border-radius:4px; overflow:hidden; margin-top:10px; }
+    .dp-fill   { height:100%; background:linear-gradient(90deg,var(--accent2),var(--accent)); border-radius:4px; transition:width .5s ease; }
+    .dp-progress-label { display:flex; justify-content:space-between; font-family:var(--mono); font-size:.72rem; color:var(--text-mid); margin-top:5px; font-weight:600; }
+
+    /* Action buttons */
+    .dp-actions { display:flex; flex-direction:column; gap:10px; }
+    .dp-btn { width:100%; padding:14px 16px; border:none; border-radius:7px; font-family:var(--font); font-size:.88rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; gap:8px; }
+    .dp-btn-start { background:linear-gradient(135deg,#0e8a6e,#00e676); color:#000; }
+    .dp-btn-start:hover { filter:brightness(1.1); }
+    .dp-btn-end   { background:linear-gradient(135deg,#b45309,#ffb300); color:#000; }
+    .dp-btn-end:hover { filter:brightness(1.1); }
+    .dp-btn-assign { background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#000; }
+    .dp-btn-assign:hover { filter:brightness(1.1); }
+    .dp-btn-move-next { background:var(--surface2); border:1px solid rgba(167,139,250,.4); color:#a78bfa; }
+    .dp-btn-move-next:hover { background:rgba(167,139,250,.1); border-color:#a78bfa; }
+    .dp-btn-move-last { background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#000; }
+    .dp-btn-move-last:hover { filter:brightness(1.1); }
+    .dp-btn-queue { background:var(--surface2); border:1px solid rgba(255,179,0,.3); color:var(--yellow); width:100%; }
+    .dp-btn-queue:hover { background:rgba(255,179,0,.08); border-color:var(--yellow); }
+    .dp-confirm-yes-move-next { flex:1; padding:11px; border:1px solid rgba(167,139,250,.4); border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:var(--surface2); color:#a78bfa; transition:all .15s; }
+    .dp-confirm-yes-move-next:hover { background:rgba(167,139,250,.1); border-color:#a78bfa; }
+    .dp-confirm-yes-move-last { flex:1; padding:11px; border:none; border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#000; transition:all .15s; }
+    .dp-confirm-yes-move-last:hover { filter:brightness(1.1); }
+    .dp-btn:disabled { opacity:.4; cursor:not-allowed; filter:none; }
+
+    /* Confirmation dialog */
+    .dp-confirm { background:var(--surface2); border:1px solid var(--border2); border-radius:7px; padding:16px; }
+    .dp-confirm-msg { font-size:.82rem; color:#fff; margin-bottom:14px; line-height:1.6; }
+    .dp-confirm-msg strong { color:#fff; font-weight:800; }
+    .dp-confirm-btns { display:flex; gap:8px; }
+    .dp-confirm-yes-start { flex:1; padding:11px; border:none; border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:linear-gradient(135deg,#0e8a6e,#00e676); color:#000; transition:all .15s; }
+    .dp-confirm-yes-start:hover { filter:brightness(1.1); }
+    .dp-confirm-yes-end   { flex:1; padding:11px; border:none; border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:linear-gradient(135deg,#b45309,#ffb300); color:#000; transition:all .15s; }
+    .dp-confirm-yes-end:hover { filter:brightness(1.1); }
+    .dp-confirm-yes-assign { flex:1; padding:11px; border:none; border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#000; transition:all .15s; }
+    .dp-confirm-yes-assign:hover { filter:brightness(1.1); }
+    .dp-confirm-no { flex:1; padding:11px; border:1px solid var(--border2); border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:transparent; color:var(--text-mid); transition:all .15s; }
+    .dp-confirm-no:hover { border-color:var(--red); color:var(--red); }
+
+    /* Assign dropdown */
+    .dp-assign-select { width:100%; background:var(--surface2); border:1px solid var(--border2); border-radius:6px; padding:10px 12px; color:var(--text); font-family:var(--font); font-size:.82rem; font-weight:600; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238892aa'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; }
+    .dp-assign-select:focus { outline:none; border-color:var(--accent2); }
+    .dp-assign-select option { background:var(--surface2); color:var(--text); }
+
+    /* Inline status message */
+    .dp-status { font-family:var(--mono); font-size:.76rem; text-align:center; padding:8px; border-radius:5px; font-weight:600; }
+    .dp-status.ok  { background:rgba(0,230,118,.1); color:var(--green); border:1px solid rgba(0,230,118,.2); }
+    .dp-status.err { background:rgba(255,61,87,.1);  color:var(--red);   border:1px solid rgba(255,61,87,.2); }
+    .dp-status.loading { color:var(--text-dim); }
 
     /* ── Stale data warning ── */
     #stale-bar { display:none; background:rgba(255,179,0,.12); border-bottom:1px solid rgba(255,179,0,.3); padding:5px 20px; font-family:var(--mono); font-size:.68rem; color:var(--yellow); flex-shrink:0; }
@@ -226,6 +372,20 @@
     .load-txt  { font-family:var(--mono); font-size:.78rem; color:var(--text-dim); }
     .err-box   { background:rgba(255,61,87,.08); border:1px solid rgba(255,61,87,.3); border-radius:6px; padding:12px 16px; font-family:var(--mono); font-size:.75rem; color:var(--red); margin:16px; }
 
+    /* ── First-time setup screen ── */
+    .setup-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:24px; padding:40px 20px; }
+    .setup-card { background:var(--surface2); border:2px solid var(--accent2); border-radius:12px; padding:32px 36px; max-width:520px; width:100%; box-shadow:0 0 40px rgba(79,111,255,.25); }
+    .setup-icon { font-size:2.4rem; text-align:center; margin-bottom:8px; }
+    .setup-title { font-size:1.4rem; font-weight:800; color:var(--text); text-align:center; margin-bottom:6px; }
+    .setup-sub { font-size:.85rem; color:var(--text-mid); text-align:center; margin-bottom:24px; line-height:1.5; }
+    .setup-steps { display:flex; flex-direction:column; gap:14px; margin-bottom:24px; }
+    .setup-step { display:flex; align-items:flex-start; gap:12px; }
+    .setup-step-num { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#000; font-size:.75rem; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+    .setup-step-txt { font-size:.84rem; color:var(--text); line-height:1.6; }
+    .setup-step-txt strong { color:var(--accent); }
+    .setup-step-txt code { font-family:var(--mono); font-size:.78rem; background:rgba(79,111,255,.12); border:1px solid rgba(79,111,255,.3); border-radius:3px; padding:1px 7px; color:var(--accent2); }
+    .setup-arrow { text-align:center; font-size:.78rem; color:var(--text-dim); margin-top:4px; letter-spacing:.05em; }
+
     /* ── Tooltip ── */
     #tip { position:fixed; background:var(--surface2); border:1px solid var(--accent2); border-radius:6px; padding:9px 12px; font-family:var(--mono); font-size:.7rem; pointer-events:none; z-index:200; opacity:0; transition:opacity .12s; max-width:210px; }
     #tip.show { opacity:1; }
@@ -237,11 +397,25 @@
     ::-webkit-scrollbar-track { background:var(--bg); }
     ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
 
-    /* Fullscreen hides config entirely */
+    /* Fullscreen hides config and token controls entirely */
     :fullscreen #cfg, :-webkit-full-screen #cfg { display:none !important; }
+    :fullscreen #cfg-toggle, :-webkit-full-screen #cfg-toggle { display:none !important; }
   </style>
 </head>
 <body>
+
+<div id="status-popup">
+  <div class="status-popup-title" id="sp-title"></div>
+  <button class="status-opt opt-ready" id="sp-ready" onclick="changeStatus(1)">
+    <span class="status-opt-dot" style="background:var(--green)"></span>Production Ready
+  </button>
+  <button class="status-opt opt-maint" id="sp-maint" onclick="changeStatus(2)">
+    <span class="status-opt-dot" style="background:var(--yellow)"></span>Maintenance Required
+  </button>
+  <button class="status-opt opt-down" id="sp-down" onclick="changeStatus(3)">
+    <span class="status-opt-dot" style="background:var(--red)"></span>Down for Service
+  </button>
+</div>
 
 <div id="tip"></div>
 <div id="detail-overlay" onclick="closeDetail()"></div>
@@ -271,10 +445,17 @@
   <div class="logo"></div>
   <h1>MJF <span>Production</span> Floor</h1>
   <div class="metrics" id="metrics"></div>
-  <div class="legend">
-    <div class="leg-item"><div class="leg-swatch" style="background:#90ee90"></div>TPU</div>
-    <div class="leg-item"><div class="leg-swatch" style="background:#ffd700"></div>PA12</div>
-    <div class="leg-item"><div class="leg-swatch" style="background:#4f6fff"></div>Other</div>
+  <div class="legend" id="mat-legend">
+    <div class="leg-item">
+      <div class="leg-count" id="leg-tpu-count">—</div>
+      <div class="leg-swatch" style="background:#90ee90"></div>
+      <div class="leg-label">TPU</div>
+    </div>
+    <div class="leg-item">
+      <div class="leg-count" id="leg-pa12-count">—</div>
+      <div class="leg-swatch" style="background:#ffd700"></div>
+      <div class="leg-label">PA12</div>
+    </div>
   </div>
   <div class="hdr-sep"></div>
   <div class="view-toggle">
@@ -285,7 +466,7 @@
     <button class="nbtn" onclick="navigate(-1)">&#8592; Prev</button>
     <div class="date-badge" id="date-badge">—</div>
     <button class="nbtn" onclick="navigate(1)">Next &#8594;</button>
-    <button class="nbtn today" onclick="goToday()">Today</button>
+    <button class="nbtn today" id="btn-today" onclick="goToday()">Today</button>
   </div>
   <div class="clock" id="clock">--:-- --</div>
   <div class="conn-dot conn-ok" id="conn-dot" title="Connection status"></div>
@@ -305,8 +486,63 @@
     <div class="queue-header">
       <span class="queue-title">Queue</span>
       <span class="queue-count" id="q-count">0</span>
+      <button class="add-job-btn" onclick="openAddJob()">&#43; Add Job</button>
     </div>
-    <div class="queue-items" id="q-items"></div>
+    <div id="q-items"></div>
+  </div>
+</div>
+
+<!-- Add Job Modal -->
+<div id="add-job-overlay" class="aj-overlay" onclick="closeAddJob()"></div>
+<div id="add-job-modal" class="aj-modal">
+  <div class="aj-header">
+    <span class="aj-title">Add New Job</span>
+    <button class="dp-close" onclick="closeAddJob()">✕</button>
+  </div>
+  <div class="aj-body">
+    <div class="aj-field">
+      <label class="aj-label">Job Name <span class="aj-req">*</span></label>
+      <input type="text" id="aj-name" class="aj-input" placeholder="e.g. ANTENNA" maxlength="100" />
+    </div>
+    <div class="aj-field">
+      <label class="aj-label">Material Type <span class="aj-req">*</span></label>
+      <div class="aj-options" id="aj-material">
+        <button class="aj-opt" data-val="1" onclick="selectOpt('aj-material',this)">PA12</button>
+        <button class="aj-opt" data-val="2" onclick="selectOpt('aj-material',this)">TPU</button>
+      </div>
+    </div>
+    <div class="aj-field">
+      <label class="aj-label">Build Height <span class="aj-req">*</span></label>
+      <div class="aj-options" id="aj-height">
+        <button class="aj-opt" data-val="1" onclick="selectOpt('aj-height',this)">100%</button>
+        <button class="aj-opt" data-val="2" onclick="selectOpt('aj-height',this)">75%</button>
+        <button class="aj-opt" data-val="3" onclick="selectOpt('aj-height',this)">50%</button>
+        <button class="aj-opt" data-val="4" onclick="selectOpt('aj-height',this)">25%</button>
+      </div>
+    </div>
+    <div class="aj-field">
+      <label class="aj-label">Priority</label>
+      <div class="aj-options" id="aj-priority">
+        <button class="aj-opt aj-critical" data-val="2" onclick="selectOpt('aj-priority',this)">Critical</button>
+        <button class="aj-opt aj-high"     data-val="0" onclick="selectOpt('aj-priority',this)">High</button>
+        <button class="aj-opt aj-medium"   data-val="7" onclick="selectOpt('aj-priority',this)">Medium</button>
+        <button class="aj-opt aj-low"      data-val="6" onclick="selectOpt('aj-priority',this)">Low</button>
+      </div>
+    </div>
+    <div class="aj-field">
+      <label class="aj-label">Assign to Printer <span style="color:var(--text-dim);font-weight:400">(optional)</span></label>
+      <select class="dp-assign-select" id="aj-printer" onchange="updateAjActions()">
+        <option value="">— Queue only —</option>
+      </select>
+    </div>
+    <div id="aj-error" class="aj-error" style="display:none"></div>
+    <div class="aj-actions">
+      <div id="aj-action-btns" style="display:contents">
+        <button class="dp-btn dp-btn-move-last" id="aj-submit" onclick="submitAddJob('queue')">&#43; Add to Queue</button>
+      </div>
+      <button class="dp-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim)" onclick="closeAddJob()">Cancel</button>
+    </div>
+    <div id="aj-status"></div>
   </div>
 </div>
 
@@ -314,7 +550,8 @@
 // ── Config ────────────────────────────────────────────────────────────────────
 const BOARD_ID      = '18415279609';
 const MGMT_BOARD_ID = '18416066539';
-const QUEUE_GROUP   = 'group_mm3sgb77';
+const QUEUE_GROUP           = 'group_mm3sgb77';
+const PRINT_COMPLETED_GROUP = 'group_mm3svypw';
 const API_URL       = 'https://api.monday.com/v2';
 
 const PRINTER_GROUPS = {
@@ -340,6 +577,29 @@ const COL = {
   END_DATE:      'date_mm3y3yeb',
   END_TIME:      'hour_mm3swp76',
   MATERIAL_TYPE: 'dropdown_mm3snn2g',
+  PRIORITY:      'color_mm3s6bae',
+  BUILD_HEIGHT:  'dropdown_mm3ssx4m',
+  PRINTER:       'dropdown_mm3s4ct0',
+};
+
+const QUEUE_DROPDOWN_ID = 6; // Monday dropdown ID for "Queue" in the Printer column
+
+// Maps Printer column dropdown IDs to their corresponding printer group IDs
+// Used to determine which swim lane a completed job ran on
+const PRINTER_DROPDOWN_TO_GROUP = {
+  1: 'group_mm3smkj2', // MJF Printer #1
+  2: 'group_mm3sehz6', // MJF Printer #2
+  3: 'group_mm3sdqtr', // MJF Printer #3
+  4: 'group_mm3scjck', // MJF Printer #4
+  5: 'group_mm3std0b', // MJF Printer #5
+};
+
+// Priority config — label id → display properties and sort order
+const PRIORITY_CONFIG = {
+  2: { label: 'Critical', color: '#df2f4a', order: 0 },
+  0: { label: 'High',     color: '#fdab3d', order: 1 },
+  7: { label: 'Medium',   color: '#579bfc', order: 2 },
+  6: { label: 'Low',      color: '#037f4c', order: 3 },
 };
 
 // Material color mapping
@@ -352,6 +612,25 @@ const MAT_DP_STYLE = {
   2: 'background:rgba(144,238,144,.15);color:#5cb85c;border:1px solid rgba(144,238,144,.3)',
 };
 
+// Duration lookup — Build Height ID × Material ID
+// Build Height: 1=100%, 2=75%, 3=50%, 4=25%
+// Material:     1=PA12,  2=TPU
+const DURATION_TABLE = {
+  1: { 1: 12,   2: 14   },
+  2: { 1: 9,    2: 10.5 },
+  3: { 1: 6,    2: 7    },
+  4: { 1: 3,    2: 3.5  },
+};
+
+const BUILD_HEIGHT_LABELS = { 1: '100%', 2: '75%', 3: '50%', 4: '25%' };
+
+function calcDurationFromHeight(buildHeightId, matId) {
+  if (!buildHeightId) return null;
+  const row = DURATION_TABLE[buildHeightId];
+  if (!row) return null;
+  return row[matId] ?? row[1] ?? null;
+}
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let tok = localStorage.getItem('mjf_tok') || '';
 let view = 'day';
@@ -359,10 +638,12 @@ let refDate = new Date();
 let printerStatuses = {};
 let printerJobs = {};
 let queueJobs = [];
+let completedJobs = {}; // keyed by printer groupId, populated from Print Completed Monday group
 let nowLineTimer = null;
 let lastLoadTime = null;
 let cfgVisible = true;
 let consecutiveFailures = 0;
+let pendingOperation = false; // blocks auto-refresh while an optimistic update is in flight
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -371,9 +652,52 @@ document.addEventListener('DOMContentLoaded', () => {
   if (tok) {
     document.getElementById('tok').value = tok;
     loadData();
+  } else {
+    // First-time setup — show guidance in the Gantt area
+    showFirstTimeSetup();
   }
-  setInterval(autoRefresh, 60000);
+  setInterval(autoRefresh, 120000);
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && tok && lastLoadTime) {
+      const staleMs = Date.now() - (lastLoadTime?.getTime() || 0);
+      if (staleMs > 120000) autoRefresh();
+    }
+  });
 });
+
+function showFirstTimeSetup() {
+  document.getElementById('gantt').innerHTML = `
+    <div class="setup-screen">
+      <div class="setup-card">
+        <div class="setup-icon">&#9881;</div>
+        <div class="setup-title">To get started, you'll need your Monday.com API Token. Follow the steps below to find it.</div>
+        <div class="setup-steps">
+          <div class="setup-step">
+            <div class="setup-step-num">1</div>
+            <div class="setup-step-txt">Log in to <strong><a href="https://monday.com" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent)">monday.com</a></strong> and click your <strong>profile picture</strong> in the top-right corner</div>
+          </div>
+          <div class="setup-step">
+            <div class="setup-step-num">2</div>
+            <div class="setup-step-txt">Select <strong>Developers</strong> from the menu</div>
+          </div>
+          <div class="setup-step">
+            <div class="setup-step-num">3</div>
+            <div class="setup-step-txt">In the left panel select <strong>API Token</strong> — your token will be displayed on that page. Click to copy it.</div>
+          </div>
+          <div class="setup-step">
+            <div class="setup-step-num">4</div>
+            <div class="setup-step-txt">Paste it into the <code>API Token</code> field above and click <strong>Save &amp; Load</strong></div>
+          </div>
+        </div>
+        <div class="setup-arrow">&#9650; Paste your token in the bar above</div>
+      </div>
+    </div>`;
+  document.getElementById('queue-section').style.display = 'none';
+  // Make sure config bar is visible for first-time setup
+  cfgVisible = true;
+  document.getElementById('cfg').classList.remove('collapsed');
+}
 
 function saveAndLoad() {
   tok = document.getElementById('tok').value.trim();
@@ -414,17 +738,50 @@ function startClock() {
 // ── Navigation ────────────────────────────────────────────────────────────────
 function navigate(dir) {
   const d = new Date(refDate);
-  view === 'day' ? d.setDate(d.getDate()+dir) : d.setDate(d.getDate()+dir*7);
+  if (view === 'day') {
+    d.setDate(d.getDate() + dir);
+  } else {
+    // Step by 7 days and snap to Monday
+    d.setDate(d.getDate() + dir * 7);
+    const monday = getMonday(d);
+    refDate = monday;
+    updateDateBadge();
+    if (Object.keys(printerJobs).length) render();
+    return;
+  }
   refDate = d; updateDateBadge();
   if (Object.keys(printerJobs).length) render();
 }
 
-function goToday() { refDate = new Date(); updateDateBadge(); if (Object.keys(printerJobs).length) render(); }
+// Returns the Monday of the week containing the given date
+function getMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun, 1=Mon...
+  const diff = (day === 0) ? -6 : 1 - day; // adjust to Monday
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function goToday() {
+  if (view === 'week') {
+    refDate = getMonday(new Date());
+  } else {
+    refDate = new Date();
+  }
+  updateDateBadge();
+  if (Object.keys(printerJobs).length) render();
+}
 
 function setView(v) {
   view = v;
   document.getElementById('vbtn-day').classList.toggle('active', v==='day');
   document.getElementById('vbtn-week').classList.toggle('active', v==='week');
+  // Update Today/This Week button label
+  document.getElementById('btn-today').textContent = v==='week' ? 'This Week' : 'Today';
+  // When switching to week view, snap to Monday of current week
+  if (v === 'week') refDate = getMonday(new Date());
+  else refDate = new Date();
   updateDateBadge();
   if (Object.keys(printerJobs).length || queueJobs.length) render();
 }
@@ -468,11 +825,23 @@ async function loadData() {
   if (!tok) return;
   showLoading();
   try {
-    const [statuses, jobs] = await Promise.all([fetchStatuses(), fetchJobs()]);
+    const { statuses, jobs } = await fetchAllData();
     printerStatuses = statuses;
-    printerJobs = {}; queueJobs = [];
+    printerJobs = {}; queueJobs = []; completedJobs = {};
     for (const g of jobs) {
       if (g.groupId === QUEUE_GROUP) queueJobs = g.jobs;
+      else if (g.groupId === PRINT_COMPLETED_GROUP) {
+        // Bucket completed jobs into printer lanes based on their Printer column value
+        // Filter to last 14 days based on End Date
+        const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+        for (const job of g.jobs) {
+          if (!job.endDt || job.endDt < cutoff) continue;
+          const printerGroupId = PRINTER_DROPDOWN_TO_GROUP[job.printerId];
+          if (!printerGroupId) continue;
+          if (!completedJobs[printerGroupId]) completedJobs[printerGroupId] = [];
+          completedJobs[printerGroupId].push(job);
+        }
+      }
       else if (PRINTER_GROUPS[g.groupId]) printerJobs[g.groupId] = g.jobs;
     }
     lastLoadTime = new Date();
@@ -496,12 +865,29 @@ async function loadData() {
 
 async function autoRefresh() {
   if (!tok) return;
+  // Skip if an optimistic update is in flight — don't overwrite local state
+  if (pendingOperation) {
+    console.log('autoRefresh skipped — pending operation in progress');
+    return;
+  }
   try {
-    const [statuses, jobs] = await Promise.all([fetchStatuses(), fetchJobs()]);
+    const { statuses, jobs } = await fetchAllData();
     printerStatuses = statuses;
-    printerJobs = {}; queueJobs = [];
+    printerJobs = {}; queueJobs = []; completedJobs = {};
     for (const g of jobs) {
       if (g.groupId === QUEUE_GROUP) queueJobs = g.jobs;
+      else if (g.groupId === PRINT_COMPLETED_GROUP) {
+        // Bucket completed jobs into printer lanes based on their Printer column value
+        // Filter to last 14 days based on End Date
+        const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+        for (const job of g.jobs) {
+          if (!job.endDt || job.endDt < cutoff) continue;
+          const printerGroupId = PRINTER_DROPDOWN_TO_GROUP[job.printerId];
+          if (!printerGroupId) continue;
+          if (!completedJobs[printerGroupId]) completedJobs[printerGroupId] = [];
+          completedJobs[printerGroupId].push(job);
+        }
+      }
       else if (PRINTER_GROUPS[g.groupId]) printerJobs[g.groupId] = g.jobs;
     }
     lastLoadTime = new Date();
@@ -523,23 +909,47 @@ function setConnStatus(s) {
   d.title = s==='ok'?'Connected':s==='stale'?'Stale — retrying':'Connection error';
 }
 
-async function fetchStatuses() {
-  const d = await gql(`query{boards(ids:[${MGMT_BOARD_ID}]){items_page{items{id column_values(ids:["dropdown_mm3z8jja"]){id value}}}}}`);
-  const s = {};
-  for (const item of d?.boards?.[0]?.items_page?.items||[]) {
-    const gid = STATUS_ITEMS[item.id]; if (!gid) continue;
-    try { const v=JSON.parse(item.column_values[0]?.value||'{}'); s[gid]=v?.ids?.[0]??1; } catch { s[gid]=1; }
-  }
-  return s;
-}
+// ── Single combined fetch — both boards in one API call ───────────────────────
+async function fetchAllData() {
+  const gids = [...Object.keys(PRINTER_GROUPS), QUEUE_GROUP, PRINT_COMPLETED_GROUP];
+  const d = await gql(`query {
+    jobBoard: boards(ids:[${BOARD_ID}]) {
+      groups(ids:${JSON.stringify(gids)}) {
+        id
+        items_page(limit:100) {
+          items {
+            id name
+            column_values(ids:["${COL.PRINT_DATE}","${COL.START_TIME}","${COL.DURATION}","${COL.END_DATE}","${COL.END_TIME}","${COL.MATERIAL_TYPE}","${COL.PRIORITY}","${COL.BUILD_HEIGHT}","${COL.PRINTER}"]) {
+              id value text
+            }
+          }
+        }
+      }
+    }
+    mgmtBoard: boards(ids:[${MGMT_BOARD_ID}]) {
+      items_page {
+        items {
+          id
+          column_values(ids:["dropdown_mm3z8jja"]) { id value }
+        }
+      }
+    }
+  }`);
 
-async function fetchJobs() {
-  const gids = [...Object.keys(PRINTER_GROUPS), QUEUE_GROUP];
-  const d = await gql(`query{boards(ids:[${BOARD_ID}]){groups(ids:${JSON.stringify(gids)}){id items_page(limit:100){items{id name column_values(ids:["${COL.PRINT_DATE}","${COL.START_TIME}","${COL.DURATION}","${COL.END_DATE}","${COL.END_TIME}","${COL.MATERIAL_TYPE}"]){id value text}}}}}}`);
-  return (d?.boards?.[0]?.groups||[]).map(g=>({
+  // Parse statuses
+  const statuses = {};
+  for (const item of d?.mgmtBoard?.[0]?.items_page?.items||[]) {
+    const gid = STATUS_ITEMS[item.id]; if (!gid) continue;
+    try { const v=JSON.parse(item.column_values[0]?.value||'{}'); statuses[gid]=v?.ids?.[0]??1; } catch { statuses[gid]=1; }
+  }
+
+  // Parse jobs across all groups (printer lanes, queue, and print completed)
+  const jobs = (d?.jobBoard?.[0]?.groups||[]).map(g=>({
     groupId: g.id,
     jobs: g.items_page.items.map(parseJob),
   }));
+
+  return { statuses, jobs };
 }
 
 function parseJob(item) {
@@ -551,10 +961,14 @@ function parseJob(item) {
   const ed = get(COL.END_DATE)?.text||null;
   let dur=null; try{const r=get(COL.DURATION)?.text;if(r&&!isNaN(parseFloat(r)))dur=parseFloat(r);}catch{}
   let matId=null; try{const v=JSON.parse(get(COL.MATERIAL_TYPE)?.value||'null');if(v)matId=v?.ids?.[0]??null;}catch{}
+  let priorityId=null; try{const v=JSON.parse(get(COL.PRIORITY)?.value||'null');if(v!=null)priorityId=v?.index??null;}catch{}
+  let buildHeightId=null; try{const v=JSON.parse(get(COL.BUILD_HEIGHT)?.value||'null');if(v)buildHeightId=v?.ids?.[0]??null;}catch{}
+  let printerId=null; try{const v=JSON.parse(get(COL.PRINTER)?.value||'null');if(v)printerId=v?.ids?.[0]??null;}catch{}
+  if(!dur && buildHeightId) dur = calcDurationFromHeight(buildHeightId, matId);
   let sdt=null,edt=null;
   if(pd&&sh!==null){const dt=new Date(`${pd}T${String(sh).padStart(2,'0')}:${String(sm).padStart(2,'0')}:00`);if(!isNaN(dt))sdt=dt;}
   if(ed&&eh!==null){const dt=new Date(`${ed}T${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}:00`);if(!isNaN(dt))edt=dt;}
-  return {id:item.id,name:item.name,startDt:sdt,endDt:edt,duration:dur,matId};
+  return {id:item.id,name:item.name,startDt:sdt,endDt:edt,duration:dur,matId,priorityId,buildHeightId,printerId};
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -565,15 +979,31 @@ function render() {
 
   // Metrics
   let active=0, total=0, queue=queueJobs.length;
+  const now2 = new Date();
+  const matCounts = { 1: 0, 2: 0 }; // 1=PA12, 2=TPU
+
   for (const gid of Object.keys(PRINTER_GROUPS)) {
     const jobs = printerJobs[gid]||[];
-    total += jobs.length;
-    if (jobs.some(j=>j.startDt&&j.endDt&&j.startDt<=now&&j.endDt>=now)) active++;
+    // Only count jobs that haven't finished yet
+    const upcoming = jobs.filter(j => !j.endDt || j.endDt > now2);
+    total += upcoming.length;
+    if (jobs.some(j=>j.startDt&&j.endDt&&j.startDt<=now2&&j.endDt>=now2)) active++;
+    // Count material types across scheduled jobs
+    upcoming.forEach(j => { if (j.matId && matCounts[j.matId] !== undefined) matCounts[j.matId]++; });
   }
+  // Count material types in queue
+  queueJobs.forEach(j => { if (j.matId && matCounts[j.matId] !== undefined) matCounts[j.matId]++; });
+
+  // Update legend counts
+  const tpuEl  = document.getElementById('leg-tpu-count');
+  const pa12El = document.getElementById('leg-pa12-count');
+  if (tpuEl)  tpuEl.textContent  = matCounts[2];
+  if (pa12El) pa12El.textContent = matCounts[1];
+
   document.getElementById('metrics').innerHTML = `
-    <div class="metric"><div class="metric-val">${active}/${Object.keys(PRINTER_GROUPS).length}</div><div class="metric-lbl">Active</div></div>
-    <div class="metric"><div class="metric-val">${total}</div><div class="metric-lbl">Scheduled</div></div>
-    <div class="metric"><div class="metric-val" style="color:${queue>10?'var(--red)':queue>5?'var(--yellow)':'var(--accent)'}">${queue}</div><div class="metric-lbl">Queue</div></div>
+    <div class="metric metric-active"><div class="metric-val">${active}/${Object.keys(PRINTER_GROUPS).length}</div><div class="metric-lbl">Active</div></div>
+    <div class="metric metric-sched"><div class="metric-val">${total}</div><div class="metric-lbl">Scheduled</div></div>
+    <div class="metric metric-queue ${queue>10?'metric-queue-urgent':''}"><div class="metric-val">${queue}</div><div class="metric-lbl">Queue</div></div>
   `;
 
   const slots = buildSlots(range);
@@ -585,7 +1015,8 @@ function render() {
     <div class="tl-slots">`;
   slots.forEach(s => {
     const isToday = s.date && s.date.toDateString()===now.toDateString();
-    html += `<div class="tl-slot ${isToday?'today-col':''} ${view==='week'?'clickable':''}" ${view==='week'&&s.date?`onclick="drillDay(${s.date.getTime()})"`:''}><div class="tl-slot-main">${s.main}</div><div class="tl-slot-sub">${s.sub}</div></div>`;
+    const curHrCls = s.isCurrent ? 'current-hour' : '';
+    html += `<div class="tl-slot ${isToday?'today-col':''} ${curHrCls} ${view==='week'?'clickable':''}" ${view==='week'&&s.date?`onclick="drillDay(${s.date.getTime()})"`:''}><div class="tl-slot-main ${s.isCurrent?'current-hour-text':''}">${s.main}</div><div class="tl-slot-sub">${s.sub}</div></div>`;
   });
   html += `</div></div>`;
 
@@ -604,12 +1035,14 @@ function render() {
 
     // Status badge — show Idle prominently when printer is ready but not running
     const statusBadge = isIdle
-      ? `<div class="pr-status-badge status-ready">Production Ready</div>
-         <div class="pr-status-badge status-idle" style="margin-top:2px">&#9679; Idle</div>`
-      : `<div class="pr-status-badge ${sc}">${st}</div>`;
+      ? `<div class="pr-status-badge status-ready" onclick="openStatusPopup(event,'${gid}',${status})">Production Ready</div>
+         <div class="pr-status-badge status-idle" style="margin-top:2px" onclick="openStatusPopup(event,'${gid}',${status})">&#9679; Idle</div>`
+      : `<div class="pr-status-badge ${sc}" onclick="openStatusPopup(event,'${gid}',${status})">${st}</div>`;
 
-    html += `<div class="printer-row">
-      <div class="pr-label">
+    const rowBorderCls = isIdle ? 'row-idle' : status===1 ? 'row-ready' : status===2 ? 'row-maint' : 'row-down';
+
+    html += `<div class="printer-row ${rowBorderCls}">
+      <div class="pr-label pr-label-wrap">
         <div class="pr-name">${name.replace('MJF ','')}</div>
         <div class="pr-sub">HP Multi Jet Fusion</div>
         ${statusBadge}
@@ -623,14 +1056,25 @@ function render() {
       html += `<div class="now-line" id="nl-${gid}" style="left:${nowPct.toFixed(3)}%"><div class="now-dot"></div></div>`;
     }
 
-    // Idle label
-    if (isIdle && !isDown) {
-      html += `<div class="idle-label">${hasAny ? 'IDLE — next job scheduled' : 'IDLE — no jobs scheduled'}</div>`;
-    }
-
     // Job blocks
     jobs.forEach(job => {
-      if (!job.startDt) return;
+      if (!job.startDt && !job.pending) return;
+
+      // ── Pending placeholder — show at right edge while Lambda schedules ──
+      if (job.pending) {
+        const matCls = MAT_CLASS[job.matId] || 'mat-other';
+        html += `<div class="job-block pending ${matCls}"
+          style="right:0;left:auto;width:12%"
+          onmouseenter="showTip(event,'${esc(job.name)}','Scheduling...','—','${job.duration?job.duration+'h':'—'}','${MAT_NAME[job.matId]||'—'}')"
+          onmouseleave="hideTip()">
+          <div class="job-inner">
+            <div class="job-name">⟳ ${esc(job.name)}</div>
+            <div class="job-times">Scheduling...</div>
+          </div>
+        </div>`;
+        return;
+      }
+
       const jEnd = job.endDt || new Date(job.startDt.getTime()+(job.duration||12)*3600000);
       if (jEnd < range.start || job.startDt > range.end) return;
 
@@ -644,18 +1088,49 @@ function render() {
 
       const isNow      = job.startDt <= now && jEnd >= now;
       const isPast     = jEnd < now;
-      const contLeft   = lPct < 0;    // job started before view start
-      const contRight  = rPct > 100;  // job ends after view end
+      const contLeft   = lPct < 0;
+      const contRight  = rPct > 100;
       const matCls     = MAT_CLASS[job.matId] || 'mat-other';
+      const criticalCls = job.priorityId === 2 ? 'critical' : '';
 
-      html += `<div class="job-block ${isPast?'past':''} ${isNow?'active':''} ${contRight?'continues-right':''} ${contLeft?'continues-left':''} ${matCls}"
+      html += `<div class="job-block ${isPast?'past':''} ${isNow?'active':''} ${contRight?'continues-right':''} ${contLeft?'continues-left':''} ${matCls} ${criticalCls}"
         style="left:${clampL.toFixed(3)}%;width:${clampW.toFixed(3)}%"
-        onclick='showDetail(${JSON.stringify({id:job.id,name:job.name,start:job.startDt?.toISOString(),end:jEnd?.toISOString(),duration:job.duration,matId:job.matId,printer:name})})'
+        onclick='showDetail(${JSON.stringify({id:job.id,name:job.name,start:job.startDt?.toISOString(),end:jEnd?.toISOString(),duration:job.duration,matId:job.matId,priorityId:job.priorityId,buildHeightId:job.buildHeightId,printer:name})})'
         onmouseenter="showTip(event,'${esc(job.name)}','${fmtTime(job.startDt)}','${fmtTime(jEnd)}','${job.duration?job.duration+'h':'—'}','${MAT_NAME[job.matId]||'—'}')"
         onmouseleave="hideTip()">
         <div class="job-inner">
           <div class="job-name">${esc(job.name)}</div>
           <div class="job-times">${fmtTime(job.startDt)}${jEnd?' → '+fmtTime(jEnd):''}</div>
+        </div>
+      </div>`;
+    });
+
+    // Completed job history blocks (from Print Completed group in Monday)
+    // Shown as faded hatched blocks to distinguish from active/scheduled jobs
+    const completed = (completedJobs[gid]||[]);
+    completed.forEach(job => {
+      const sdt = job.startDt ? new Date(job.startDt) : null;
+      const edt = job.endDt   ? new Date(job.endDt)   : null;
+      if (!sdt || !edt) return;
+      if (edt < range.start || sdt > range.end) return;
+
+      const lPct   = calcPct(sdt, range);
+      const rPct   = calcPct(edt, range);
+      const clampL = Math.max(0, lPct);
+      const clampR = Math.min(100, rPct);
+      const clampW = Math.max(clampR - clampL, 0.3);
+      const contLeft  = lPct < 0;
+      const contRight = rPct > 100;
+      const matCls = MAT_CLASS[job.matId] || 'mat-other';
+
+      html += `<div class="job-block completed-block ${contRight?'continues-right':''} ${contLeft?'continues-left':''} ${matCls}"
+        style="left:${clampL.toFixed(3)}%;width:${clampW.toFixed(3)}%"
+        onclick='showCompletedDetail(${JSON.stringify({id:job.id,name:job.name,start:job.startDt,end:job.endDt,duration:job.duration,matId:job.matId,buildHeightId:job.buildHeightId,priorityId:job.priorityId,printer:name,completedAt:job.completedAt})})'
+        onmouseenter="showTip(event,'${esc(job.name)} ✓','${fmtTime(sdt)}','${fmtTime(edt)}','${job.duration?job.duration+'h':'—'}','${MAT_NAME[job.matId]||'—'}')"
+        onmouseleave="hideTip()">
+        <div class="job-inner">
+          <div class="job-name">✓ ${esc(job.name)}</div>
+          <div class="job-times">${fmtTime(sdt)} → ${fmtTime(edt)}</div>
         </div>
       </div>`;
     });
@@ -673,12 +1148,19 @@ function buildSlots(range) {
   if (view === 'day') {
     for (let h=0;h<24;h++) {
       const per=h<12?'AM':'PM', h12=h===0?12:h>12?h-12:h;
-      slots.push({main:`${h12}:00`,sub:per,date:null});
+      const isCurrent = h === now.getHours() && range.start.toDateString() === now.toDateString();
+      slots.push({main:`${h12}:00`,sub:per,date:null,isCurrent});
     }
   } else {
     const cur = new Date(range.start);
     while (cur < range.end) {
-      slots.push({main:cur.toLocaleDateString('en-US',{weekday:'short'}),sub:cur.toLocaleDateString('en-US',{month:'short',day:'numeric'}),date:new Date(cur)});
+      const isToday = cur.toDateString() === now.toDateString();
+      slots.push({
+        main: cur.toLocaleDateString('en-US',{weekday:'short'}),
+        sub:  cur.toLocaleDateString('en-US',{month:'short',day:'numeric'}),
+        date: new Date(cur),
+        isCurrent: isToday, // highlight today in week view
+      });
       cur.setDate(cur.getDate()+1);
     }
   }
@@ -693,13 +1175,51 @@ function renderQueue() {
   const qs=document.getElementById('queue-section');
   const qi=document.getElementById('q-items');
   const qc=document.getElementById('q-count');
-  if (!queueJobs.length) { qs.style.display='none'; return; }
-  qs.style.display='block';
+  qs.style.display='block'; // always show for Add Job button
   qc.textContent = queueJobs.length;
-  qi.innerHTML = queueJobs.map(j=>{
-    const chipCls = MAT_CHIP[j.matId]||'';
-    return `<div class="queue-chip ${chipCls}" onclick='showDetail(${JSON.stringify({id:j.id,name:j.name,start:null,end:null,duration:j.duration,matId:j.matId,printer:"Queue"})})'>${esc(j.name)}</div>`;
-  }).join('');
+
+  if (!queueJobs.length) {
+    qi.innerHTML = '<div class="queue-empty">No jobs in queue</div>';
+    return;
+  }
+  const sorted = [...queueJobs].sort((a, b) => {
+    const aOrder = PRIORITY_CONFIG[Number(a.priorityId)]?.order ?? 99;
+    const bOrder = PRIORITY_CONFIG[Number(b.priorityId)]?.order ?? 99;
+    return aOrder - bOrder;
+  });
+
+  // Group jobs by priority — use string keys consistently
+  const groups = {};
+  sorted.forEach(j => {
+    const key = j.priorityId != null ? String(j.priorityId) : 'none';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(j);
+  });
+
+  // Render groups in explicit priority order: Critical(2) → High(0) → Medium(7) → Low(6) → none
+  const groupOrder = ['2', '0', '7', '6', 'none'];
+  let html = '<div class="queue-groups">';
+  for (const key of groupOrder) {
+    if (!groups[key]?.length) continue;
+    const priority = key !== 'none' ? PRIORITY_CONFIG[Number(key)] : null;
+    const labelStyle = priority
+      ? `background:${priority.color}20;color:${priority.color};border:1px solid ${priority.color}40`
+      : `background:var(--surface2);color:var(--text-dim);border:1px solid var(--border2)`;
+    const labelText = priority ? priority.label : 'No Priority';
+
+    html += `<div class="queue-priority-group">
+      <span class="queue-group-label" style="${labelStyle}">${labelText}</span>
+      <div class="queue-items">`;
+
+    groups[key].forEach(j => {
+      const chipCls = MAT_CHIP[j.matId] || '';
+      html += `<div class="queue-chip ${chipCls}" onclick='showDetail(${JSON.stringify({id:j.id,name:j.name,start:null,end:null,duration:j.duration,matId:j.matId,priorityId:j.priorityId,printer:"Queue"})})'>${esc(j.name)}</div>`;
+    });
+
+    html += `</div></div>`;
+  }
+  html += '</div>';
+  qi.innerHTML = html;
 }
 
 // ── Now line updater ──────────────────────────────────────────────────────────
@@ -715,50 +1235,762 @@ function startNowUpdater(range) {
 }
 
 // ── Detail Panel ──────────────────────────────────────────────────────────────
+// ── Detail Panel ──────────────────────────────────────────────────────────────
+let currentDetailData = null;
+
 function showDetail(data) {
   if (typeof data === 'string') data = JSON.parse(data);
-  const panel=document.getElementById('detail-panel');
-  const overlay=document.getElementById('detail-overlay');
+  currentDetailData = data;
+  const panel   = document.getElementById('detail-panel');
+  const overlay = document.getElementById('detail-overlay');
   document.getElementById('dp-title').textContent = data.name;
-
   const matEl = document.getElementById('dp-mat');
   if (data.matId && MAT_NAME[data.matId]) {
-    matEl.textContent = MAT_NAME[data.matId];
+    matEl.textContent   = MAT_NAME[data.matId];
     matEl.style.cssText = MAT_DP_STYLE[data.matId]||'';
-    matEl.style.display='inline-block';
-  } else {
-    matEl.style.display='none';
-  }
+    matEl.style.display = 'inline-block';
+  } else { matEl.style.display = 'none'; }
+  renderDetailBody(data);
+  panel.classList.add('open');
+  overlay.classList.add('open');
+}
 
-  const now=new Date();
-  const sdt=data.start?new Date(data.start):null;
-  const edt=data.end?new Date(data.end):null;
-  let prog=0;
-  if(sdt&&edt&&now>=sdt) prog=Math.min(100,((now-sdt)/(edt-sdt))*100);
+function renderDetailBody(data) {
+  const now = new Date();
+  const sdt = data.start ? new Date(data.start) : null;
+  const edt = data.end   ? new Date(data.end)   : null;
+  let prog = 0;
+  if (sdt && edt && now >= sdt) prog = Math.min(100, ((now-sdt)/(edt-sdt))*100);
+
+  const isQueued      = data.printer === 'Queue';
+  const isComplete    = edt && now > edt;
+  const hasStarted    = sdt && sdt <= now;
+  const isPrinterLane = !isQueued && !!Object.values(PRINTER_GROUPS).find(n => n === data.printer);
+
+  // Start Now: show for scheduled jobs that are not complete
+  const showStartBtn = !isQueued && sdt && !isComplete;
+  // End Now: show for jobs that have already started (past their start time)
+  const showEndBtn   = !isQueued && sdt && hasStarted && !isComplete;
+
+  const nowStr = fmtDateTime(now);
+
+  // Build printer options for assign (queue jobs) and move (printer lane jobs)
+  // Only show Production Ready printers, exclude the current printer for move
+  const availablePrinters = Object.entries(PRINTER_GROUPS)
+    .filter(([gid]) => (printerStatuses[gid] || 1) === 1);
+
+  const printerOptions = availablePrinters
+    .map(([gid, pname]) => `<option value="${gid}">${pname}</option>`)
+    .join('');
+
+  // For move — exclude the printer the job is currently on
+  const currentGid = Object.entries(PRINTER_GROUPS).find(([,name]) => name === data.printer)?.[0];
+  const movePrinterOptions = availablePrinters
+    .filter(([gid]) => gid !== currentGid)
+    .map(([gid, pname]) => {
+      // Check if a job is currently active on this printer
+      const hasActive = (printerJobs[gid]||[]).some(j => j.startDt && j.endDt && j.startDt <= now && j.endDt >= now);
+      return `<option value="${gid}" data-active="${hasActive}">${pname}${hasActive ? ' — job running' : ''}</option>`;
+    })
+    .join('');
+
+  const noAvailablePrinters  = printerOptions.length === 0;
+  const noMovePrinters       = movePrinterOptions.length === 0;
+
+  // Format duration as Xh Ym for readability
+  const durFormatted = data.duration
+    ? (() => {
+        const h = Math.floor(data.duration);
+        const m = Math.round((data.duration - h) * 60);
+        return m > 0 ? `${h}h ${m}m` : `${h}h`;
+      })()
+    : '—';
 
   document.getElementById('dp-body').innerHTML = `
     <div>
       <div class="dp-sec">Schedule</div>
       <div class="dp-row"><span class="dp-lbl">Printer</span><span class="dp-val">${data.printer||'—'}</span></div>
-      <div class="dp-row"><span class="dp-lbl">Start</span><span class="dp-val">${sdt?fmtDateTime(sdt):'Not scheduled'}</span></div>
-      <div class="dp-row"><span class="dp-lbl">End</span><span class="dp-val">${edt?fmtDateTime(edt):'—'}</span></div>
-      <div class="dp-row"><span class="dp-lbl">Duration</span><span class="dp-val">${data.duration?data.duration+'h':'—'}</span></div>
-      <div class="dp-row"><span class="dp-lbl">Remaining</span><span class="dp-val">${edt&&now<edt?fmtRemaining(edt,now):edt?'Complete':'—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Material</span><span class="dp-val">${MAT_NAME[data.matId]||'—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Build Height</span><span class="dp-val">${BUILD_HEIGHT_LABELS[data.buildHeightId]||'—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Priority</span><span class="dp-val" ${data.priorityId!=null&&PRIORITY_CONFIG[Number(data.priorityId)]?`style="color:${PRIORITY_CONFIG[Number(data.priorityId)].color}"`:''}>${data.priorityId!=null&&PRIORITY_CONFIG[Number(data.priorityId)]?PRIORITY_CONFIG[Number(data.priorityId)].label:'—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Start</span><span class="dp-val dp-val-accent">${sdt?fmtDateTime(sdt):'Not scheduled'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">End</span><span class="dp-val dp-val-accent">${edt?fmtDateTime(edt):'—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Duration</span><span class="dp-val">${durFormatted}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Remaining</span><span class="dp-val ${edt&&now<edt?'dp-val-green':''}">${edt&&now<edt?fmtRemaining(edt,now):edt?'Complete':'—'}</span></div>
     </div>
     ${sdt&&edt?`<div>
       <div class="dp-sec">Progress</div>
-      <div style="font-family:var(--mono);font-size:.7rem;color:var(--text-mid);margin-bottom:4px">${prog.toFixed(0)}% complete</div>
       <div class="dp-progress"><div class="dp-fill" style="width:${prog.toFixed(1)}%"></div></div>
+      <div class="dp-progress-label"><span>${prog.toFixed(0)}% complete</span><span>${edt&&now<edt?fmtRemaining(edt,now)+' left':'Complete'}</span></div>
     </div>`:''}
+    ${isPrinterLane ? `<div>
+      <div class="dp-sec">Move Job</div>
+      <select class="dp-assign-select" id="dp-move-select" onchange="updateMoveButtons()">
+        <option value="">— Select destination —</option>
+        <option value="__queue__">↩ Queue</option>
+        ${movePrinterOptions}
+      </select>
+      <div id="dp-move-btns" style="margin-top:10px;display:none"></div>
+      <div id="dp-confirm-area"></div>
+      <div id="dp-action-status"></div>
+    </div>`:''}
+    ${isQueued?`<div>
+      <div class="dp-sec">Assign to Printer</div>
+      ${noAvailablePrinters
+        ? `<div style="font-family:var(--mono);font-size:.78rem;color:var(--red);padding:10px;background:rgba(255,61,87,.08);border:1px solid rgba(255,61,87,.2);border-radius:5px;">No printers currently available</div>`
+        : `<select class="dp-assign-select" id="dp-printer-select">
+            <option value="">— Select a printer —</option>
+            ${printerOptions}
+          </select>
+          <div class="dp-actions" style="margin-top:10px">
+            <button class="dp-btn dp-btn-move-last" onclick="confirmAssign('schedule')">&#9654; Schedule</button>
+            <button class="dp-btn dp-btn-move-next" onclick="confirmAssign('next')">&#9654;&#9654; Start Next</button>
+          </div>`
+      }
+      <div id="dp-confirm-area"></div>
+      <div id="dp-action-status"></div>
+    </div>`:''}
+    ${showStartBtn||showEndBtn?`<div>
+      <div class="dp-sec">Actions</div>
+      <div class="dp-actions">
+        ${showStartBtn?`<button class="dp-btn dp-btn-start" id="btn-start" onclick="confirmAction('start')">&#9654; Start Now &nbsp;<span style="font-weight:400;font-size:.75rem;opacity:.8">${nowStr}</span></button>`:''}
+        ${showEndBtn?`<button class="dp-btn dp-btn-end" id="btn-end" onclick="confirmAction('end')">&#9632; End Now &nbsp;<span style="font-weight:400;font-size:.75rem;opacity:.8">${nowStr}</span></button>`:''}
+      </div>
+      <div id="dp-confirm-area"></div>
+      <div id="dp-action-status"></div>
+    </div>`:''}
+  `;
+}
+
+function confirmAssign(type = 'schedule') {
+  const select = document.getElementById('dp-printer-select');
+  if (!select || !select.value) return;
+
+  const gid         = select.value;
+  const printerName = PRINTER_GROUPS[gid] || gid;
+  const area        = document.getElementById('dp-confirm-area');
+  if (!area) return;
+
+  const isNext = type === 'next';
+
+  // Check if target printer has an active job — warn for Start Next
+  const now = new Date();
+  const hasActive = (printerJobs[gid]||[]).some(j =>
+    j.startDt && j.endDt && j.startDt <= now && j.endDt >= now
+  );
+
+  const msg = isNext
+    ? `Move <strong>${esc(currentDetailData?.name||'')}</strong> to <strong>${printerName}</strong> as the <strong>next job</strong>?${hasActive ? '<br><span style="color:var(--yellow);font-size:.75rem">⚠ A job is currently running — this will start when it finishes</span>' : ''}`
+    : `Move <strong>${esc(currentDetailData?.name||'')}</strong> to <strong>${printerName}</strong> and <strong>schedule at end of queue</strong>?`;
+
+  area.innerHTML = `
+    <div class="dp-confirm" style="margin-top:10px;border-color:${isNext?'rgba(167,139,250,.3)':'var(--border2)'}">
+      <div class="dp-confirm-msg">${msg}</div>
+      <div class="dp-confirm-btns">
+        <button class="${isNext?'dp-confirm-yes-move-next':'dp-confirm-yes-move-last'}" onclick="executeAssign('${gid}','${type}')">
+          ${isNext?'&#9654;&#9654; Confirm Start Next':'&#9654; Confirm Schedule'}
+        </button>
+        <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
+      </div>
+    </div>`;
+}
+
+async function executeAssign(gid, type = 'schedule') {
+  const data = currentDetailData;
+  if (!data) return;
+
+  const area   = document.getElementById('dp-confirm-area');
+  const status = document.getElementById('dp-action-status');
+  if (area)   area.innerHTML = '';
+  if (status) { status.className='dp-status loading'; status.textContent='Assigning to printer...'; }
+
+  document.querySelectorAll('.dp-btn').forEach(b => b.disabled = true);
+
+  // Optimistic update
+  queueJobs = queueJobs.filter(j => j.id !== data.id);
+  const placeholder = {
+    id: data.id, name: data.name,
+    startDt: null, endDt: null,
+    duration: data.duration, matId: data.matId,
+    priorityId: data.priorityId, buildHeightId: data.buildHeightId,
+    pending: true,
+  };
+  if (!printerJobs[gid]) printerJobs[gid] = [];
+  printerJobs[gid] = [...printerJobs[gid], placeholder];
+
+  closeDetail();
+  render();
+  pendingOperation = true;
+
+  try {
+    if (type === 'next') {
+      // Set start time BEFORE moving so Lambda respects it and cascades
+      const now = new Date();
+      const activeJob = (printerJobs[gid]||[]).find(j =>
+        j.startDt && j.endDt && j.startDt <= now && j.endDt >= now && !j.pending
+      );
+      const startTime = activeJob ? activeJob.endDt : now;
+      const dateStr = startTime.getFullYear()+'-'+String(startTime.getMonth()+1).padStart(2,'0')+'-'+String(startTime.getDate()).padStart(2,'0');
+      const hourVal = JSON.stringify({ hour: startTime.getHours(), minute: startTime.getMinutes() });
+      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: dateStr }));
+      await mondayMutate(data.id, COL.START_TIME, hourVal);
+      await mondayMoveGroup(data.id, gid);
+    } else {
+      // Schedule: clear dates then move so Lambda queues at end
+      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({}));
+      await mondayMutate(data.id, COL.START_TIME, JSON.stringify({}));
+      await mondayMoveGroup(data.id, gid);
+    }
+
+    setTimeout(() => { pendingOperation = false; autoRefresh(); }, 4000);
+    setTimeout(() => autoRefresh(), 8000);
+
+  } catch(e) {
+    printerJobs[gid] = (printerJobs[gid]||[]).filter(j => j.id !== data.id);
+    queueJobs = [...queueJobs, {
+      id: data.id, name: data.name,
+      startDt: null, endDt: null,
+      duration: data.duration, matId: data.matId,
+      priorityId: data.priorityId, buildHeightId: data.buildHeightId,
+    }];
+    pendingOperation = false;
+    render();
+    console.error('Assignment failed:', e.message);
+  }
+}
+
+
+function updateMoveButtons() {
+  const select = document.getElementById('dp-move-select');
+  const btns   = document.getElementById('dp-move-btns');
+  if (!select || !btns) return;
+
+  const val = select.value;
+  if (!val) { btns.style.display = 'none'; btns.innerHTML = ''; return; }
+
+  btns.style.display = 'block';
+
+  if (val === '__queue__') {
+    btns.innerHTML = `
+      <div class="dp-actions">
+        <button class="dp-btn dp-btn-queue" onclick="confirmMove('queue')" style="width:100%">&#9664; Move to Queue</button>
+      </div>`;
+  } else {
+    btns.innerHTML = `
+      <div class="dp-actions">
+        <button class="dp-btn dp-btn-move-last" onclick="confirmMove('last')">&#9654; Schedule</button>
+        <button class="dp-btn dp-btn-move-next" onclick="confirmMove('next')">&#9654;&#9654; Start Next</button>
+      </div>`;
+  }
+}
+
+function confirmMove(type) {
+  const area = document.getElementById('dp-confirm-area');
+  if (!area) return;
+
+  const select = document.getElementById('dp-move-select');
+  const val    = select ? select.value : '';
+
+  if (type === 'queue') {
+    area.innerHTML = `
+      <div class="dp-confirm" style="margin-top:10px;border-color:rgba(255,179,0,.3)">
+        <div class="dp-confirm-msg">Move <strong>${esc(currentDetailData?.name||'')}</strong> back to <strong>Queue</strong>?<br>Scheduled dates and times will be cleared.</div>
+        <div class="dp-confirm-btns">
+          <button class="dp-btn-queue" style="flex:1;padding:11px;border:1px solid rgba(255,179,0,.4);border-radius:6px;font-family:var(--font);font-size:.82rem;font-weight:800;cursor:pointer;background:rgba(255,179,0,.08);color:var(--yellow)" onclick="executeMove(null,'queue')">&#9664; Confirm Move to Queue</button>
+          <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const gid         = val;
+  const printerName = PRINTER_GROUPS[gid] || gid;
+  const isNext      = type === 'next';
+
+  const hasActive = (printerJobs[gid]||[]).some(j =>
+    j.startDt && j.endDt && j.startDt <= new Date() && j.endDt >= new Date()
+  );
+
+  const msg = isNext
+    ? `Move <strong>${esc(currentDetailData?.name||'')}</strong> to <strong>${printerName}</strong> as the <strong>next job</strong>?${hasActive?'<br><span style="color:var(--yellow);font-size:.75rem">⚠ A job is currently running — this will start when it finishes</span>':''}`
+    : `Move <strong>${esc(currentDetailData?.name||'')}</strong> to <strong>${printerName}</strong> and <strong>schedule at end</strong>?`;
+
+  area.innerHTML = `
+    <div class="dp-confirm" style="margin-top:10px;border-color:${isNext?'rgba(167,139,250,.3)':'var(--border2)'}">
+      <div class="dp-confirm-msg">${msg}</div>
+      <div class="dp-confirm-btns">
+        <button class="${isNext?'dp-confirm-yes-move-next':'dp-confirm-yes-move-last'}" onclick="executeMove('${gid}','${type}')">
+          ${isNext?'&#9654;&#9654; Confirm Start Next':'&#9654; Confirm Schedule'}
+        </button>
+        <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
+      </div>
+    </div>`;
+}
+
+async function executeMove(gid, type) {
+  const data = currentDetailData;
+  if (!data) return;
+
+  const area   = document.getElementById('dp-confirm-area');
+  const status = document.getElementById('dp-action-status');
+  if (area)   area.innerHTML = '';
+  if (status) { status.className='dp-status loading'; status.textContent='Moving job...'; }
+  document.querySelectorAll('.dp-btn').forEach(b => b.disabled = true);
+
+  const sourceGid = Object.entries(PRINTER_GROUPS).find(([,name]) => name === data.printer)?.[0];
+
+  // ── Optimistic update ──────────────────────────────────────────────────────
+  if (sourceGid) {
+    printerJobs[sourceGid] = (printerJobs[sourceGid]||[]).filter(j => j.id !== data.id);
+  }
+
+  if (type === 'queue') {
+    // Add back to queue immediately
+    queueJobs = [...queueJobs, {
+      id: data.id, name: data.name,
+      startDt: null, endDt: null,
+      duration: data.duration, matId: data.matId,
+      priorityId: data.priorityId, buildHeightId: data.buildHeightId,
+    }];
+  } else {
+    // Add placeholder to target printer lane
+    if (!printerJobs[gid]) printerJobs[gid] = [];
+    printerJobs[gid] = [...printerJobs[gid], {
+      id: data.id, name: data.name,
+      startDt: null, endDt: null,
+      duration: data.duration, matId: data.matId,
+      priorityId: data.priorityId, buildHeightId: data.buildHeightId,
+      pending: true,
+    }];
+  }
+
+  closeDetail();
+  render();
+  pendingOperation = true;
+
+  try {
+    if (type === 'queue') {
+      // Clear all dates, reset Printer column to Queue, move to Queue group
+      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({}));
+      await mondayMutate(data.id, COL.START_TIME,  JSON.stringify({}));
+      await mondayMutate(data.id, COL.END_DATE,    JSON.stringify({}));
+      await mondayMutate(data.id, COL.END_TIME,    JSON.stringify({}));
+      await mondayMutate(data.id, COL.PRINTER,     JSON.stringify({ ids: [QUEUE_DROPDOWN_ID] }));
+      await mondayMoveGroup(data.id, QUEUE_GROUP);
+      setTimeout(() => { pendingOperation = false; autoRefresh(); }, 2000);
+
+    } else if (type === 'next') {
+      const now = new Date();
+      const targetJobs = printerJobs[gid] || [];
+      const activeJob = targetJobs.find(j =>
+        j.startDt && j.endDt && j.startDt <= now && j.endDt >= now && !j.pending
+      );
+      const startTime = activeJob ? activeJob.endDt : now;
+      const dateStr = `${startTime.getFullYear()}-${String(startTime.getMonth()+1).padStart(2,'0')}-${String(startTime.getDate()).padStart(2,'0')}`;
+      const hourVal = JSON.stringify({ hour: startTime.getHours(), minute: startTime.getMinutes() });
+      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: dateStr }));
+      await mondayMutate(data.id, COL.START_TIME, hourVal);
+      await mondayMoveGroup(data.id, gid);
+      setTimeout(() => { pendingOperation = false; autoRefresh(); }, 4000);
+      setTimeout(() => autoRefresh(), 8000);
+
+    } else {
+      // Schedule: clear dates first so Lambda queues at end
+      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({}));
+      await mondayMutate(data.id, COL.START_TIME, JSON.stringify({}));
+      await mondayMoveGroup(data.id, gid);
+      setTimeout(() => { pendingOperation = false; autoRefresh(); }, 4000);
+      setTimeout(() => autoRefresh(), 8000);
+    }
+
+  } catch(e) {
+    // Rollback
+    if (sourceGid && type !== 'queue') {
+      printerJobs[sourceGid] = [...(printerJobs[sourceGid]||[]), {
+        id: data.id, name: data.name,
+        startDt: data.start ? new Date(data.start) : null,
+        endDt:   data.end   ? new Date(data.end)   : null,
+        duration: data.duration, matId: data.matId,
+        priorityId: data.priorityId, buildHeightId: data.buildHeightId,
+      }];
+    }
+    if (type === 'queue') {
+      queueJobs = queueJobs.filter(j => j.id !== data.id);
+      if (sourceGid) {
+        printerJobs[sourceGid] = [...(printerJobs[sourceGid]||[]), {
+          id: data.id, name: data.name,
+          startDt: data.start ? new Date(data.start) : null,
+          endDt:   data.end   ? new Date(data.end)   : null,
+          duration: data.duration, matId: data.matId,
+          priorityId: data.priorityId, buildHeightId: data.buildHeightId,
+        }];
+      }
+    } else {
+      printerJobs[gid] = (printerJobs[gid]||[]).filter(j => j.id !== data.id);
+    }
+    pendingOperation = false;
+    render();
+    console.error('Move failed:', e.message);
+  }
+}
+
+function confirmAction(type) {
+  const now    = new Date();
+  const nowStr = fmtDateTime(now);
+  const area   = document.getElementById('dp-confirm-area');
+  if (!area) return;
+
+  const isStart = type === 'start';
+  const confirmClass = isStart ? 'dp-confirm-yes-start' : 'dp-confirm-yes-end';
+  const confirmLabel = isStart ? '&#9654; Confirm Start' : '&#9632; Confirm End';
+  const borderColor  = isStart ? 'rgba(0,230,118,.25)' : 'rgba(255,179,0,.25)';
+
+  const msg = isStart
+    ? `Set <strong>Print Date to today</strong> and <strong>Start Time to ${nowStr}</strong>?<br>Downstream jobs will cascade automatically.`
+    : `Set <strong>End Time to ${nowStr}</strong> and move this job to <strong>Print Completed</strong>?`;
+
+  area.innerHTML = `
+    <div class="dp-confirm" style="margin-top:10px;border-color:${borderColor}">
+      <div class="dp-confirm-msg">${msg}</div>
+      <div class="dp-confirm-btns">
+        <button class="${confirmClass}" onclick="executeAction('${type}')">${confirmLabel}</button>
+        <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
+      </div>
+    </div>`;
+}
+
+function cancelConfirm() {
+  const area = document.getElementById('dp-confirm-area');
+  if (area) area.innerHTML = '';
+}
+
+// ── Completed Job History ──
+// History now comes from Monday's Print Completed group via fetchAllData.
+// No local storage — all devices share the same source of truth.
+
+async function executeAction(type) {
+  const data = currentDetailData;
+  if (!data) return;
+
+  const area   = document.getElementById('dp-confirm-area');
+  const status = document.getElementById('dp-action-status');
+  if (area)   area.innerHTML = '';
+  if (status) { status.className='dp-status loading'; status.textContent='Updating Monday.com...'; }
+
+  document.querySelectorAll('.dp-btn').forEach(b => b.disabled = true);
+
+  try {
+    const now      = new Date();
+    const dateStr  = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const hourVal  = JSON.stringify({ hour: now.getHours(), minute: now.getMinutes() });
+
+    if (type === 'start') {
+      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: dateStr }));
+      await mondayMutate(data.id, COL.START_TIME, hourVal);
+      if (status) { status.className='dp-status ok'; status.textContent='✓ Start time updated — cascading downstream jobs...'; }
+      setTimeout(() => { autoRefresh(); currentDetailData={...data,start:now.toISOString()}; renderDetailBody(currentDetailData); }, 3000);
+
+    } else if (type === 'end') {
+      await mondayMutate(data.id, COL.END_DATE, JSON.stringify({ date: dateStr }));
+      await mondayMutate(data.id, COL.END_TIME, hourVal);
+      await mondayMoveGroup(data.id, PRINT_COMPLETED_GROUP);
+
+      // Job moves to Print Completed group in Monday — autoRefresh will pick it
+      // up and place it in the correct printer lane history based on its
+      // Printer column value
+
+      if (status) { status.className='dp-status ok'; status.textContent='✓ Job marked complete and moved to Print Completed'; }
+      setTimeout(() => { closeDetail(); autoRefresh(); }, 2000);
+    }
+
+  } catch(e) {
+    if (status) { status.className='dp-status err'; status.textContent='✗ Error: '+e.message; }
+    document.querySelectorAll('.dp-btn').forEach(b => b.disabled = false);
+  }
+}
+
+async function mondayMutate(itemId, columnId, value) {
+  const q = `mutation { change_column_value(board_id:${BOARD_ID}, item_id:${itemId}, column_id:"${columnId}", value:${JSON.stringify(value)}) { id } }`;
+  await gql(q);
+}
+
+async function mondayMoveGroup(itemId, groupId) {
+  const q = `mutation { move_item_to_group(item_id:${itemId}, group_id:"${groupId}") { id } }`;
+  await gql(q);
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('detail-overlay').classList.remove('open');
+  currentDetailData = null;
+}
+
+// Shows read-only detail for a completed (historical) job
+function showCompletedDetail(data) {
+  if (typeof data === 'string') data = JSON.parse(data);
+  currentDetailData = data;
+  const panel   = document.getElementById('detail-panel');
+  const overlay = document.getElementById('detail-overlay');
+  document.getElementById('dp-title').innerHTML = `✓ ${data.name}`;
+
+  const matEl = document.getElementById('dp-mat');
+  if (data.matId && MAT_NAME[data.matId]) {
+    matEl.textContent   = MAT_NAME[data.matId];
+    matEl.style.cssText = MAT_DP_STYLE[data.matId]||'';
+    matEl.style.display = 'inline-block';
+  } else { matEl.style.display = 'none'; }
+
+  const sdt = data.start ? new Date(data.start) : null;
+  const edt = data.end   ? new Date(data.end)   : null;
+  const completedAt = data.completedAt ? new Date(data.completedAt) : null;
+
+  // Calculate actual duration from real start/end times
+  let actualDur = '—';
+  if (sdt && edt) {
+    const ms = edt - sdt;
+    const h  = Math.floor(ms/3600000);
+    const m  = Math.floor((ms%3600000)/60000);
+    actualDur = h>0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  document.getElementById('dp-body').innerHTML = `
+    <div style="background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);border-radius:5px;padding:8px 12px;font-family:var(--mono);font-size:.7rem;color:var(--green);">
+      ✓ Print Completed${completedAt?' — '+fmtDateTime(completedAt):''}
+    </div>
+    <div>
+      <div class="dp-sec">Actual Schedule</div>
+      <div class="dp-row"><span class="dp-lbl">Printer</span><span class="dp-val">${data.printer||'—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Material</span><span class="dp-val">${MAT_NAME[data.matId]||'—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Build Height</span><span class="dp-val">${BUILD_HEIGHT_LABELS[data.buildHeightId]||'—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Priority</span><span class="dp-val" ${data.priorityId!=null&&PRIORITY_CONFIG[Number(data.priorityId)]?`style="color:${PRIORITY_CONFIG[Number(data.priorityId)].color}"`:''}>${data.priorityId!=null&&PRIORITY_CONFIG[Number(data.priorityId)]?PRIORITY_CONFIG[Number(data.priorityId)].label:'—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Start</span><span class="dp-val">${sdt?fmtDateTime(sdt):'—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">End</span><span class="dp-val">${edt?fmtDateTime(edt):'—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Planned Duration</span><span class="dp-val">${data.duration ? (() => { const h=Math.floor(data.duration); const m=Math.round((data.duration-h)*60); return m>0?`${h}h ${m}m`:`${h}h`; })() : '—'}</span></div>
+      <div class="dp-row"><span class="dp-lbl">Actual Duration</span><span class="dp-val dp-val-green">${actualDur}</span></div>
+    </div>
   `;
 
   panel.classList.add('open');
   overlay.classList.add('open');
 }
 
-function closeDetail() {
-  document.getElementById('detail-panel').classList.remove('open');
-  document.getElementById('detail-overlay').classList.remove('open');
+// ── Add Job Modal ─────────────────────────────────────────────────────────────
+function openAddJob() {
+  // Silently refresh data to ensure printer statuses are current
+  if (tok) autoRefresh();
+
+  // Populate printer dropdown with Production Ready printers
+  const select = document.getElementById('aj-printer');
+  select.innerHTML = '<option value="">— Queue only —</option>';
+  Object.entries(PRINTER_GROUPS)
+    .filter(([gid]) => (printerStatuses[gid]||1) === 1)
+    .forEach(([gid, name]) => {
+      const opt = document.createElement('option');
+      opt.value = gid;
+      opt.textContent = name;
+      select.appendChild(opt);
+    });
+
+  // Reset form
+  document.getElementById('aj-name').value = '';
+  document.querySelectorAll('.aj-opt').forEach(b => b.classList.remove('selected'));
+  document.getElementById('aj-error').style.display = 'none';
+  document.getElementById('aj-status').textContent = '';
+  document.getElementById('aj-submit').disabled = false;
+
+  document.getElementById('add-job-overlay').classList.add('open');
+  document.getElementById('add-job-modal').classList.add('open');
+  setTimeout(() => document.getElementById('aj-name').focus(), 100);
+}
+
+function closeAddJob() {
+  document.getElementById('add-job-overlay').classList.remove('open');
+  document.getElementById('add-job-modal').classList.remove('open');
+}
+
+function selectOpt(groupId, btn) {
+  document.querySelectorAll(`#${groupId} .aj-opt`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function getSelectedVal(groupId) {
+  const sel = document.querySelector(`#${groupId} .aj-opt.selected`);
+  return sel ? sel.dataset.val : null;
+}
+
+function updateAjActions() {
+  const printerGid = document.getElementById('aj-printer').value;
+  const btns = document.getElementById('aj-action-btns');
+
+  if (!printerGid) {
+    // Queue only — single button
+    btns.innerHTML = `<button class="dp-btn dp-btn-move-last" id="aj-submit" onclick="submitAddJob('queue')">&#43; Add to Queue</button>`;
+  } else {
+    // Printer selected — show Schedule and Start Next
+    btns.innerHTML = `
+      <button class="dp-btn dp-btn-move-last" id="aj-submit" onclick="submitAddJob('schedule')">&#9654; Schedule</button>
+      <button class="dp-btn dp-btn-move-next" onclick="submitAddJob('next')">&#9654;&#9654; Start Next</button>`;
+  }
+}
+
+async function submitAddJob(mode = 'queue') {
+  const name       = document.getElementById('aj-name').value.trim();
+  const matId      = getSelectedVal('aj-material');
+  const heightId   = getSelectedVal('aj-height');
+  const priorityId = getSelectedVal('aj-priority');
+  const printerGid = document.getElementById('aj-printer').value;
+
+  const errEl  = document.getElementById('aj-error');
+  const statEl = document.getElementById('aj-status');
+
+  if (!name)     { errEl.textContent='Job name is required.';       errEl.style.display='block'; return; }
+  if (!matId)    { errEl.textContent='Material Type is required.';  errEl.style.display='block'; return; }
+  if (!heightId) { errEl.textContent='Build Height is required.';   errEl.style.display='block'; return; }
+  errEl.style.display = 'none';
+
+  document.querySelectorAll('#aj-action-btns .dp-btn').forEach(b => b.disabled = true);
+  statEl.className = 'dp-status loading';
+  statEl.textContent = 'Creating job...';
+
+  try {
+    const colVals = {
+      [COL.MATERIAL_TYPE]: { ids: [Number(matId)] },
+      [COL.BUILD_HEIGHT]:  { ids: [Number(heightId)] },
+    };
+    if (priorityId !== null) {
+      colVals[COL.PRIORITY] = { index: Number(priorityId) };
+    }
+
+    // For Start Next — pre-set start time so Lambda respects it
+    const now = new Date();
+    if (mode === 'next' && printerGid) {
+      const activeJob = (printerJobs[printerGid]||[]).find(j =>
+        j.startDt && j.endDt && j.startDt <= now && j.endDt >= now
+      );
+      const startTime = activeJob ? activeJob.endDt : now;
+      colVals[COL.PRINT_DATE] = { date: startTime.getFullYear()+'-'+String(startTime.getMonth()+1).padStart(2,'0')+'-'+String(startTime.getDate()).padStart(2,'0') };
+      colVals[COL.START_TIME] = { hour: startTime.getHours(), minute: startTime.getMinutes() };
+    }
+
+    const targetGroup = (mode !== 'queue' && printerGid) ? printerGid : QUEUE_GROUP;
+    const columnValuesStr = JSON.stringify(JSON.stringify(colVals));
+
+    const mutation = `mutation {
+      create_item(
+        board_id: ${BOARD_ID},
+        group_id: "${targetGroup}",
+        item_name: ${JSON.stringify(name)},
+        column_values: ${columnValuesStr}
+      ) { id name }
+    }`;
+
+    const result = await gql(mutation);
+    const newId = result?.create_item?.id;
+    if (!newId) throw new Error('Item creation failed — no ID returned');
+
+    statEl.className = 'dp-status ok';
+    statEl.textContent = `✓ "${name}" created${mode !== 'queue' ? ' and scheduled' : ' in Queue'}`;
+
+    setTimeout(() => { closeAddJob(); autoRefresh(); }, 1500);
+
+  } catch(e) {
+    statEl.className = 'dp-status err';
+    statEl.textContent = '✗ Error: ' + e.message;
+    document.querySelectorAll('#aj-action-btns .dp-btn').forEach(b => b.disabled = false);
+  }
+}
+
+let openPopupGid = null;
+
+function openStatusPopup(e, gid, currentStatus) {
+  e.stopPropagation();
+  const popup = document.getElementById('status-popup');
+
+  // Toggle closed if already open for same printer
+  if (openPopupGid === gid && popup.classList.contains('open')) {
+    closeStatusPopup(); return;
+  }
+
+  // Set title and mark current option
+  document.getElementById('sp-title').textContent = (PRINTER_GROUPS[gid]||gid).replace('MJF ','');
+  document.getElementById('sp-ready').className = `status-opt opt-ready${currentStatus===1?' current':''}`;
+  document.getElementById('sp-maint').className = `status-opt opt-maint${currentStatus===2?' current':''}`;
+  document.getElementById('sp-down').className  = `status-opt opt-down${currentStatus===3?' current':''}`;
+
+  openPopupGid = gid;
+
+  // Position popup below the clicked badge using fixed screen coordinates
+  const rect = e.target.getBoundingClientRect();
+  popup.style.top  = `${rect.bottom + 6}px`;
+  popup.style.left = `${rect.left}px`;
+  popup.classList.add('open');
+}
+
+function closeStatusPopup() {
+  const popup = document.getElementById('status-popup');
+  if (popup) popup.classList.remove('open');
+  openPopupGid = null;
+}
+
+document.addEventListener('click', (e) => {
+  const popup = document.getElementById('status-popup');
+  if (popup && !popup.contains(e.target)) closeStatusPopup();
+});
+
+async function changeStatus(newStatusId) {
+  const gid = openPopupGid;
+  closeStatusPopup();
+  if (!gid) return;
+
+  const statusEntry = Object.entries(STATUS_ITEMS).find(([,g]) => g === gid);
+  if (!statusEntry) { console.error('No status item found for', gid); return; }
+  const statusItemId = statusEntry[0];
+
+  // Optimistically update local state so UI responds immediately
+  printerStatuses[gid] = newStatusId;
+
+  // If Down for Service — optimistically move all jobs from this
+  // printer lane to queue immediately so the display updates instantly
+  if (newStatusId === 3) {
+    const laneJobs = printerJobs[gid] || [];
+    if (laneJobs.length > 0) {
+      const clearedJobs = laneJobs.map(j => ({
+        ...j, startDt: null, endDt: null,
+      }));
+      queueJobs = [...queueJobs, ...clearedJobs];
+      printerJobs[gid] = [];
+    }
+  }
+
+  render();
+
+  // Block auto-refresh while the API call and Lambda processing are in flight
+  pendingOperation = true;
+
+  try {
+    const mutation = `mutation {
+      change_column_value(
+        board_id: ${MGMT_BOARD_ID},
+        item_id: ${statusItemId},
+        column_id: "dropdown_mm3z8jja",
+        value: ${JSON.stringify(JSON.stringify({ ids: [newStatusId] }))}
+      ) { id }
+    }`;
+    await gql(mutation);
+    console.log(`Printer ${gid} status updated to ${newStatusId}`);
+
+    // If Down for Service, Lambda will move jobs to Queue — refresh after delay
+    if (newStatusId === 3) {
+      setTimeout(() => { pendingOperation = false; autoRefresh(); }, 6000);
+    } else {
+      pendingOperation = false;
+    }
+
+  } catch(e) {
+    console.error('Failed to update printer status:', e.message);
+    pendingOperation = false;
+    autoRefresh();
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
