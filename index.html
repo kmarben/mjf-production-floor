@@ -2079,6 +2079,19 @@ async function executeAction(type) {
 
   const area   = document.getElementById('dp-confirm-area');
   const status = document.getElementById('dp-action-status');
+
+  // Read picker values BEFORE clearing the area — the picker lives inside
+  // dp-confirm-area, so clearing it first would destroy the input we need to read
+  let pickedStartTime = null;
+  if (type === 'start') {
+    const picker = document.getElementById('start-time-input');
+    if (!picker || !picker.value) {
+      if (status) { status.className='dp-status err'; status.textContent='✗ Please select a start time.'; }
+      return;
+    }
+    pickedStartTime = new Date(picker.value);
+  }
+
   if (area)   area.innerHTML = '';
   if (status) { status.className='dp-status loading'; status.textContent='Updating Monday.com...'; }
 
@@ -2090,34 +2103,18 @@ async function executeAction(type) {
     const hourVal  = JSON.stringify({ hour: now.getHours(), minute: now.getMinutes() });
 
     if (type === 'start') {
-      // Read the picked start time from the datetime-local input
-      const picker = document.getElementById('start-time-input');
-      const errEl  = document.getElementById('start-time-error');
-      const hintEl = document.getElementById('start-time-hint');
-
-      if (!picker || !picker.value) {
-        if (errEl) { errEl.style.display='block'; errEl.textContent='Please select a start time.'; }
-        document.querySelectorAll('.dp-btn').forEach(b => b.disabled = false);
-        if (status) status.textContent = '';
-        return;
-      }
-
-      const picked = new Date(picker.value);
+      const picked = pickedStartTime;
       const past24 = new Date(now.getTime() - 24*60*60*1000);
 
       // Validate: not in the future, not more than 24h ago
       if (picked > now) {
-        if (errEl) { errEl.style.display='block'; errEl.textContent='Start Now cannot be a future time. Use Delay Job to schedule a future start.'; }
-        if (hintEl) hintEl.style.display='none';
+        if (status) { status.className='dp-status err'; status.textContent='✗ Start Now cannot be a future time. Use Delay Job to schedule a future start.'; }
         document.querySelectorAll('.dp-btn').forEach(b => b.disabled = false);
-        if (status) status.textContent = '';
         return;
       }
       if (picked < past24) {
-        if (errEl) { errEl.style.display='block'; errEl.textContent='Start time cannot be more than 24 hours ago.'; }
-        if (hintEl) hintEl.style.display='none';
+        if (status) { status.className='dp-status err'; status.textContent='✗ Start time cannot be more than 24 hours ago.'; }
         document.querySelectorAll('.dp-btn').forEach(b => b.disabled = false);
-        if (status) status.textContent = '';
         return;
       }
 
