@@ -1575,6 +1575,27 @@ async function executeAssign(gid, type = 'schedule') {
 
   const area   = document.getElementById('dp-confirm-area');
   const status = document.getElementById('dp-action-status');
+
+  // Read delay picker values BEFORE clearing the area — pickers live inside
+  // dp-confirm-area, so clearing it first would destroy the inputs we need
+  let delayDateStr = null;
+  let delayHour = null;
+  let delayMinute = null;
+  if (type === 'delay') {
+    const dateInput = document.getElementById('delay-date');
+    const timeInput = document.getElementById('delay-time');
+    delayDateStr = dateInput?.value;
+    const timeStr = timeInput?.value;
+    const [hourStr, minStr] = (timeStr || '').split(':');
+    delayHour = parseInt(hourStr, 10);
+    delayMinute = parseInt(minStr, 10);
+
+    if (!delayDateStr || isNaN(delayHour) || delayHour < 0 || delayHour > 23 || isNaN(delayMinute) || delayMinute < 0 || delayMinute > 59) {
+      if (status) { status.className='dp-status err'; status.textContent='✗ Invalid delay date or time.'; }
+      return;
+    }
+  }
+
   if (area)   area.innerHTML = '';
   if (status) { status.className='dp-status loading'; status.textContent='Assigning to printer...'; }
 
@@ -1598,22 +1619,10 @@ async function executeAssign(gid, type = 'schedule') {
 
   try {
     if (type === 'delay') {
-      // Delay: set Print Date + Start Time to picked values BEFORE moving so
+      // Delay: use values already read from the picker before area was cleared.
       // Lambda respects the pre-set time and cascades downstream if needed
-      const dateInput = document.getElementById('delay-date');
-      const timeInput = document.getElementById('delay-time');
-      const dateStr = dateInput?.value;
-      const timeStr = timeInput?.value; // "HH:MM" format
-      const [hourStr, minStr] = (timeStr || '').split(':');
-      const hour = parseInt(hourStr, 10);
-      const minute = parseInt(minStr, 10);
-
-      if (!dateStr || isNaN(hour) || hour < 0 || hour > 23 || isNaN(minute) || minute < 0 || minute > 59) {
-        throw new Error('Invalid delay date or time');
-      }
-
-      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: dateStr }));
-      await mondayMutate(data.id, COL.START_TIME, JSON.stringify({ hour, minute }));
+      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: delayDateStr }));
+      await mondayMutate(data.id, COL.START_TIME, JSON.stringify({ hour: delayHour, minute: delayMinute }));
       await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.SCHEDULED] }));
       await mondayMoveGroup(data.id, gid);
 
@@ -1767,6 +1776,27 @@ async function executeMove(gid, type) {
 
   const area   = document.getElementById('dp-confirm-area');
   const status = document.getElementById('dp-action-status');
+
+  // Read delay picker values BEFORE clearing the area — pickers live inside
+  // dp-confirm-area, so clearing it first would destroy the inputs we need
+  let delayDateStr = null;
+  let delayHour = null;
+  let delayMinute = null;
+  if (type === 'delay') {
+    const dateInput = document.getElementById('delay-date');
+    const timeInput = document.getElementById('delay-time');
+    delayDateStr = dateInput?.value;
+    const timeStr = timeInput?.value;
+    const [hourStr, minStr] = (timeStr || '').split(':');
+    delayHour = parseInt(hourStr, 10);
+    delayMinute = parseInt(minStr, 10);
+
+    if (!delayDateStr || isNaN(delayHour) || delayHour < 0 || delayHour > 23 || isNaN(delayMinute) || delayMinute < 0 || delayMinute > 59) {
+      if (status) { status.className='dp-status err'; status.textContent='✗ Invalid delay date or time.'; }
+      return;
+    }
+  }
+
   if (area)   area.innerHTML = '';
   if (status) { status.className='dp-status loading'; status.textContent='Moving job...'; }
   document.querySelectorAll('.dp-btn').forEach(b => b.disabled = true);
@@ -1816,21 +1846,10 @@ async function executeMove(gid, type) {
       setTimeout(() => { pendingOperation = false; autoRefresh(); }, 2000);
 
     } else if (type === 'delay') {
-      // Delay: set Print Date + Start Time to picked values, Lambda cascades downstream
-      const dateInput = document.getElementById('delay-date');
-      const timeInput = document.getElementById('delay-time');
-      const dateStr = dateInput?.value;
-      const timeStr = timeInput?.value; // "HH:MM" format
-      const [hourStr, minStr] = (timeStr || '').split(':');
-      const hour = parseInt(hourStr, 10);
-      const minute = parseInt(minStr, 10);
-
-      if (!dateStr || isNaN(hour) || hour < 0 || hour > 23 || isNaN(minute) || minute < 0 || minute > 59) {
-        throw new Error('Invalid delay date or time');
-      }
-
-      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: dateStr }));
-      await mondayMutate(data.id, COL.START_TIME, JSON.stringify({ hour, minute }));
+      // Delay: use values already read from the picker before area was cleared,
+      // Lambda cascades downstream if this creates overlaps
+      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: delayDateStr }));
+      await mondayMutate(data.id, COL.START_TIME, JSON.stringify({ hour: delayHour, minute: delayMinute }));
       await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.SCHEDULED] }));
       await mondayMoveGroup(data.id, gid);
       setTimeout(() => { pendingOperation = false; autoRefresh(); }, 4000);
