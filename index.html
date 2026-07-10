@@ -353,7 +353,7 @@
     .aj-medium   { color:#579bfc; border-color:rgba(87,155,252,.3); }
     .aj-low      { color:#037f4c; border-color:rgba(3,127,76,.3); }
     .aj-error { font-family:var(--mono); font-size:.75rem; color:var(--red); padding:8px 12px; background:rgba(255,61,87,.08); border:1px solid rgba(255,61,87,.2); border-radius:5px; }
-    .aj-actions { display:flex; gap:8px; }
+    .aj-actions { display:flex; flex-direction:column; gap:8px; }
 
     /* ── Detail Panel ── */
     #detail-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:100; }
@@ -1760,13 +1760,12 @@ function confirmMove(type) {
     </div>`;
 }
 
-// Helper to build default delay date/time (tomorrow at 06:00)
+// Helper to build default delay date/time (today at 06:00)
 function getDelayDefaults() {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const y = tomorrow.getFullYear();
-  const m = String(tomorrow.getMonth()+1).padStart(2,'0');
-  const d = String(tomorrow.getDate()).padStart(2,'0');
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth()+1).padStart(2,'0');
+  const d = String(today.getDate()).padStart(2,'0');
   return { date: `${y}-${m}-${d}`, time: '06:00' };
 }
 
@@ -2337,12 +2336,6 @@ function updateAjActions() {
   const printerGid = document.getElementById('aj-printer').value;
   const btns = document.getElementById('aj-action-btns');
 
-  // Reset any inline layout styles that might have been set for the delay picker
-  btns.style.display = '';
-  btns.style.flexDirection = '';
-  btns.style.gap = '';
-  btns.style.width = '';
-
   if (!printerGid) {
     // Queue only — single button
     btns.innerHTML = `<button class="dp-btn dp-btn-move-last" id="aj-submit" onclick="submitAddJob('queue')">&#43; Add to Queue</button>`;
@@ -2367,12 +2360,6 @@ function showAjDelayPicker() {
 
   const defaults = getDelayDefaults();
   const btns = document.getElementById('aj-action-btns');
-  // Override the display:contents so this container becomes a vertical stack
-  // for the picker + confirm/back buttons (Cancel remains a sibling below)
-  btns.style.display = 'flex';
-  btns.style.flexDirection = 'column';
-  btns.style.gap = '8px';
-  btns.style.width = '100%';
   btns.innerHTML = `
     <div class="delay-picker" id="aj-delay-picker" style="margin-top:0">
       <div class="delay-row">
@@ -2385,17 +2372,7 @@ function showAjDelayPicker() {
       </div>
     </div>
     <button class="dp-btn dp-btn-delay" onclick="submitAddJob('delay')">&#9200; Create with Delay</button>
-    <button class="dp-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim)" onclick="restoreAjActionsLayout()">Back</button>`;
-}
-
-// Restore the default display:contents layout when returning from delay picker
-function restoreAjActionsLayout() {
-  const btns = document.getElementById('aj-action-btns');
-  btns.style.display = '';
-  btns.style.flexDirection = '';
-  btns.style.gap = '';
-  btns.style.width = '';
-  updateAjActions();
+    <button class="dp-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim)" onclick="updateAjActions()">Back</button>`;
 }
 
 async function submitAddJob(mode = 'queue') {
