@@ -2337,6 +2337,12 @@ function updateAjActions() {
   const printerGid = document.getElementById('aj-printer').value;
   const btns = document.getElementById('aj-action-btns');
 
+  // Reset any inline layout styles that might have been set for the delay picker
+  btns.style.display = '';
+  btns.style.flexDirection = '';
+  btns.style.gap = '';
+  btns.style.width = '';
+
   if (!printerGid) {
     // Queue only — single button
     btns.innerHTML = `<button class="dp-btn dp-btn-move-last" id="aj-submit" onclick="submitAddJob('queue')">&#43; Add to Queue</button>`;
@@ -2361,8 +2367,14 @@ function showAjDelayPicker() {
 
   const defaults = getDelayDefaults();
   const btns = document.getElementById('aj-action-btns');
+  // Override the display:contents so this container becomes a vertical stack
+  // for the picker + confirm/back buttons (Cancel remains a sibling below)
+  btns.style.display = 'flex';
+  btns.style.flexDirection = 'column';
+  btns.style.gap = '8px';
+  btns.style.width = '100%';
   btns.innerHTML = `
-    <div class="delay-picker" id="aj-delay-picker" style="width:100%">
+    <div class="delay-picker" id="aj-delay-picker" style="margin-top:0">
       <div class="delay-row">
         <span class="delay-lbl">Date</span>
         <input type="date" class="delay-input" id="aj-delay-date" value="${defaults.date}" />
@@ -2370,11 +2382,20 @@ function showAjDelayPicker() {
       <div class="delay-row">
         <span class="delay-lbl">Time</span>
         <input type="time" class="delay-input" id="aj-delay-time" value="${defaults.time}" />
-        
       </div>
     </div>
     <button class="dp-btn dp-btn-delay" onclick="submitAddJob('delay')">&#9200; Create with Delay</button>
-    <button class="dp-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim)" onclick="updateAjActions()">Back</button>`;
+    <button class="dp-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim)" onclick="restoreAjActionsLayout()">Back</button>`;
+}
+
+// Restore the default display:contents layout when returning from delay picker
+function restoreAjActionsLayout() {
+  const btns = document.getElementById('aj-action-btns');
+  btns.style.display = '';
+  btns.style.flexDirection = '';
+  btns.style.gap = '';
+  btns.style.width = '';
+  updateAjActions();
 }
 
 async function submitAddJob(mode = 'queue') {
