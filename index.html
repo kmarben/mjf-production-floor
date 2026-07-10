@@ -171,8 +171,7 @@
     .status-ready { color:var(--green);  background:rgba(0,230,118,.12); border:1px solid rgba(0,230,118,.3); }
     .status-maint { color:var(--yellow); background:rgba(255,179,0,.12); border:1px solid rgba(255,179,0,.3); }
     .status-down  { color:var(--red);    background:rgba(255,61,87,.12); border:1px solid rgba(255,61,87,.3); }
-    .status-idle  { color:var(--red);    background:rgba(255,61,87,.12); border:1px solid rgba(255,61,87,.3); animation:idle-blink 2s ease-in-out infinite; }
-    @keyframes idle-blink { 0%,100%{opacity:1} 50%{opacity:.6} }
+    .status-idle  { color:var(--red);    background:rgba(255,61,87,.12); border:1px solid rgba(255,61,87,.3); }
 
     /* Status popup */
     #status-popup { position:fixed; background:var(--surface2); border:1px solid var(--border2); border-radius:6px; padding:6px; z-index:999; min-width:200px; box-shadow:0 8px 32px rgba(0,0,0,.7); display:none; flex-direction:column; gap:4px; }
@@ -206,16 +205,76 @@
     /* Job blocks — larger text for TV */
     .job-block { position:absolute; top:7px; height:calc(var(--row-h) - 14px); border-radius:5px; overflow:hidden; cursor:pointer; transition:filter .15s, transform .1s; z-index:5; min-width:4px; }
     .job-block:hover { filter:brightness(1.25); transform:scaleY(1.05); z-index:8; }
-    .job-block.past { opacity:.35; }
+    .job-block.past { opacity:.55; }
 
-    /* Active job — pulsing glow animation */
+    /* Overdue End Now — scheduled end passed 2+ hours ago, no End Now clicked */
+    .job-block.overdue-end {
+      opacity: 1 !important;
+      border: 2px solid var(--yellow) !important;
+      box-shadow: 0 0 12px rgba(255,179,0,.5) !important;
+    }
+    .job-block.overdue-end::before {
+      content:''; position:absolute; inset:-4px; border-radius:8px; pointer-events:none;
+      box-shadow:0 0 20px rgba(255,179,0,.9);
+      animation:overdue-blink 3s ease-in-out infinite;
+      z-index:-1;
+    }
+    .job-block.overdue-end::after {
+      content: '\26A0 END?';
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      font-size: .6rem;
+      font-weight: 800;
+      color: #000;
+      background: var(--yellow);
+      padding: 2px 5px;
+      border-radius: 3px;
+      letter-spacing: .05em;
+    }
+    /* Overdue Start Now — scheduled start passed 1+ hour ago, no Start Now clicked */
+    .job-block.overdue-start {
+      opacity: 1 !important;
+      border: 2px solid var(--green) !important;
+      box-shadow: 0 0 12px rgba(0,230,118,.5) !important;
+    }
+    .job-block.overdue-start::before {
+      content:''; position:absolute; inset:-4px; border-radius:8px; pointer-events:none;
+      box-shadow:0 0 20px rgba(0,230,118,.9);
+      animation:overdue-blink 3s ease-in-out infinite;
+      z-index:-1;
+    }
+    .job-block.overdue-start .overdue-start-badge {
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      font-size: .6rem;
+      font-weight: 800;
+      color: #000;
+      background: var(--green);
+      padding: 2px 5px;
+      border-radius: 3px;
+      letter-spacing: .05em;
+      z-index: 2;
+    }
+    @keyframes overdue-blink {
+      0%,100% { opacity:.25; }
+      50%     { opacity:1; }
+    }
+
+    /* Active job — pulsing glow via opacity on layer (GPU-friendly) */
     .job-block.active {
-      box-shadow:0 0 0 2px var(--blue), 0 0 20px rgba(68,138,255,.5);
+      box-shadow:0 0 0 2px var(--blue), 0 0 16px rgba(68,138,255,.4);
+    }
+    .job-block.active::before {
+      content:''; position:absolute; inset:-3px; border-radius:7px; pointer-events:none;
+      box-shadow:0 0 20px rgba(68,138,255,.9);
       animation:active-pulse 2.5s ease-in-out infinite;
+      z-index:-1;
     }
     @keyframes active-pulse {
-      0%,100% { box-shadow:0 0 0 2px var(--blue),0 0 16px rgba(68,138,255,.4); }
-      50%      { box-shadow:0 0 0 2px var(--blue),0 0 32px rgba(68,138,255,.9); }
+      0%,100% { opacity:.35; }
+      50%     { opacity:1; }
     }
     .job-block.continues-right::after { content:'▶'; position:absolute; right:5px; top:50%; transform:translateY(-50%); font-size:.65rem; color:rgba(255,255,255,.75); }
     .job-block.continues-left::before { content:'◀'; position:absolute; left:5px; top:50%; transform:translateY(-50%); font-size:.65rem; color:rgba(255,255,255,.75); }
@@ -332,6 +391,18 @@
     .dp-btn-move-last:hover { filter:brightness(1.1); }
     .dp-btn-queue { background:var(--surface2); border:1px solid rgba(255,179,0,.3); color:var(--yellow); width:100%; }
     .dp-btn-queue:hover { background:rgba(255,179,0,.08); border-color:var(--yellow); }
+    .dp-btn-delay { background:var(--surface2); border:1px solid rgba(255,179,0,.4); color:var(--yellow); }
+    .dp-btn-delay:hover { background:rgba(255,179,0,.1); border-color:var(--yellow); }
+    .dp-confirm-yes-delay { flex:1; padding:11px; border:1px solid rgba(255,179,0,.4); border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:var(--surface2); color:var(--yellow); transition:all .15s; }
+    .dp-confirm-yes-delay:hover { background:rgba(255,179,0,.1); border-color:var(--yellow); }
+
+    /* Delay date/time picker */
+    .delay-picker { display:flex; flex-direction:column; gap:8px; padding:12px; background:var(--surface2); border:1px solid var(--border2); border-radius:6px; margin-top:10px; }
+    .delay-row { display:flex; align-items:center; gap:8px; }
+    .delay-lbl { font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-dim); min-width:44px; }
+    .delay-input { flex:1; background:var(--surface); border:1px solid var(--border2); border-radius:5px; padding:8px 12px; color:var(--text); font-family:var(--mono); font-size:.85rem; font-weight:600; }
+    .delay-input:focus { outline:none; border-color:var(--yellow); }
+    .delay-hint { font-size:.68rem; color:var(--text-dim); font-family:var(--mono); }
     .dp-confirm-yes-move-next { flex:1; padding:11px; border:1px solid rgba(167,139,250,.4); border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:var(--surface2); color:#a78bfa; transition:all .15s; }
     .dp-confirm-yes-move-next:hover { background:rgba(167,139,250,.1); border-color:#a78bfa; }
     .dp-confirm-yes-move-last { flex:1; padding:11px; border:none; border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#000; transition:all .15s; }
@@ -394,6 +465,12 @@
     .tr { display:flex; justify-content:space-between; gap:12px; margin-bottom:2px; }
     .tl { color:var(--text-dim); }
     .tv { color:var(--accent); }
+
+    /* Pause all continuous animations when the tab is hidden — saves GPU */
+    body.tab-hidden .job-block::before,
+    body.tab-hidden .job-block::after {
+      animation-play-state: paused;
+    }
 
     ::-webkit-scrollbar { width:4px; height:4px; }
     ::-webkit-scrollbar-track { background:var(--bg); }
@@ -583,6 +660,14 @@ const COL = {
   PRIORITY:      'color_mm3s6bae',
   BUILD_HEIGHT:  'dropdown_mm3ssx4m',
   PRINTER:       'dropdown_mm3s4ct0',
+  PRINT_STATUS:  'dropdown_mm54959y',
+};
+
+// Print Status dropdown label IDs
+const PRINT_STATUS_ID = {
+  SCHEDULED: 1,
+  RUNNING:   2,
+  COMPLETED: 3,
 };
 
 const QUEUE_DROPDOWN_ID = 6; // Monday dropdown ID for "Queue" in the Printer column
@@ -596,6 +681,11 @@ const PRINTER_DROPDOWN_TO_GROUP = {
   4: 'group_mm3scjck', // MJF Printer #4
   5: 'group_mm3std0b', // MJF Printer #5
 };
+
+// Reverse mapping: group ID → dropdown ID (for setting Printer column on item creation)
+const PRINTER_GROUP_TO_DROPDOWN = Object.fromEntries(
+  Object.entries(PRINTER_DROPDOWN_TO_GROUP).map(([id, gid]) => [gid, Number(id)])
+);
 
 // Priority config — label id → display properties and sort order
 const PRIORITY_CONFIG = {
@@ -662,6 +752,9 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(autoRefresh, 120000);
 
   document.addEventListener('visibilitychange', () => {
+    // Toggle body class to pause CSS animations when tab is hidden (GPU efficiency)
+    document.body.classList.toggle('tab-hidden', document.hidden);
+
     if (!document.hidden && tok && lastLoadTime) {
       const staleMs = Date.now() - (lastLoadTime?.getTime() || 0);
       if (staleMs > 120000) autoRefresh();
@@ -920,15 +1013,37 @@ function setConnStatus(s) {
 
 // ── Single combined fetch — both boards in one API call ───────────────────────
 async function fetchAllData() {
-  const gids = [...Object.keys(PRINTER_GROUPS), QUEUE_GROUP, PRINT_COMPLETED_GROUP];
+  // Regular printer lanes + queue in one query
+  const activeGids = [...Object.keys(PRINTER_GROUPS), QUEUE_GROUP];
+
+  // Print Completed uses a rules filter to only pull items with End Date
+  // in the last 14 days. This avoids the items_page limit issue when the
+  // Print Completed group grows past 100 items.
+  const cutoffDate = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const cutoffStr = cutoffDate.getFullYear()+'-'+String(cutoffDate.getMonth()+1).padStart(2,'0')+'-'+String(cutoffDate.getDate()).padStart(2,'0');
+  const completedQueryParams = `query_params:{rules:[{column_id:"${COL.END_DATE}",compare_value:["${cutoffStr}","EXACT"],operator:greater_than}]}`;
+
   const d = await gql(`query {
     jobBoard: boards(ids:[${BOARD_ID}]) {
-      groups(ids:${JSON.stringify(gids)}) {
+      groups(ids:${JSON.stringify(activeGids)}) {
         id
         items_page(limit:100) {
           items {
             id name
-            column_values(ids:["${COL.PRINT_DATE}","${COL.START_TIME}","${COL.DURATION}","${COL.END_DATE}","${COL.END_TIME}","${COL.MATERIAL_TYPE}","${COL.PRIORITY}","${COL.BUILD_HEIGHT}","${COL.PRINTER}"]) {
+            column_values(ids:["${COL.PRINT_DATE}","${COL.START_TIME}","${COL.DURATION}","${COL.END_DATE}","${COL.END_TIME}","${COL.MATERIAL_TYPE}","${COL.PRIORITY}","${COL.BUILD_HEIGHT}","${COL.PRINTER}","${COL.PRINT_STATUS}"]) {
+              id value text
+            }
+          }
+        }
+      }
+    }
+    completedGroup: boards(ids:[${BOARD_ID}]) {
+      groups(ids:["${PRINT_COMPLETED_GROUP}"]) {
+        id
+        items_page(limit:100, ${completedQueryParams}) {
+          items {
+            id name
+            column_values(ids:["${COL.PRINT_DATE}","${COL.START_TIME}","${COL.DURATION}","${COL.END_DATE}","${COL.END_TIME}","${COL.MATERIAL_TYPE}","${COL.PRIORITY}","${COL.BUILD_HEIGHT}","${COL.PRINTER}","${COL.PRINT_STATUS}"]) {
               id value text
             }
           }
@@ -952,13 +1067,17 @@ async function fetchAllData() {
     try { const v=JSON.parse(item.column_values[0]?.value||'{}'); statuses[gid]=v?.ids?.[0]??1; } catch { statuses[gid]=1; }
   }
 
-  // Parse jobs across all groups (printer lanes, queue, and print completed)
-  const jobs = (d?.jobBoard?.[0]?.groups||[]).map(g=>({
+  // Parse jobs — merge active groups and completed group
+  const activeGroups    = (d?.jobBoard?.[0]?.groups||[]).map(g=>({
     groupId: g.id,
-    jobs: g.items_page.items.map(parseJob),
+    jobs:    g.items_page.items.map(parseJob),
+  }));
+  const completedGroup = (d?.completedGroup?.[0]?.groups||[]).map(g=>({
+    groupId: g.id,
+    jobs:    g.items_page.items.map(parseJob),
   }));
 
-  return { statuses, jobs };
+  return { statuses, jobs: [...activeGroups, ...completedGroup] };
 }
 
 function parseJob(item) {
@@ -973,11 +1092,12 @@ function parseJob(item) {
   let priorityId=null; try{const v=JSON.parse(get(COL.PRIORITY)?.value||'null');if(v!=null)priorityId=v?.index??null;}catch{}
   let buildHeightId=null; try{const v=JSON.parse(get(COL.BUILD_HEIGHT)?.value||'null');if(v)buildHeightId=v?.ids?.[0]??null;}catch{}
   let printerId=null; try{const v=JSON.parse(get(COL.PRINTER)?.value||'null');if(v)printerId=v?.ids?.[0]??null;}catch{}
+  let printStatus=null; try{const v=JSON.parse(get(COL.PRINT_STATUS)?.value||'null');if(v)printStatus=v?.ids?.[0]??null;}catch{}
   if(!dur && buildHeightId) dur = calcDurationFromHeight(buildHeightId, matId);
   let sdt=null,edt=null;
   if(pd&&sh!==null){const dt=new Date(`${pd}T${String(sh).padStart(2,'0')}:${String(sm).padStart(2,'0')}:00`);if(!isNaN(dt))sdt=dt;}
   if(ed&&eh!==null){const dt=new Date(`${ed}T${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}:00`);if(!isNaN(dt))edt=dt;}
-  return {id:item.id,name:item.name,startDt:sdt,endDt:edt,duration:dur,matId,priorityId,buildHeightId,printerId};
+  return {id:item.id,name:item.name,startDt:sdt,endDt:edt,duration:dur,matId,priorityId,buildHeightId,printerId,printStatus};
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -1097,16 +1217,34 @@ function render() {
 
       const isNow      = job.startDt <= now && jEnd >= now;
       const isPast     = jEnd < now;
+      // Overdue End = scheduled end is more than 2 hours in the past
+      // AND Print Status is not Complete (belt-and-suspenders — group location
+      // is primary signal, status is backup for edge cases)
+      const overdueEndMs   = 2 * 60 * 60 * 1000;
+      const isOverdue      = isPast && (now - jEnd) > overdueEndMs
+                             && job.printStatus !== PRINT_STATUS_ID.COMPLETED;
+      // Overdue Start = scheduled start is more than 1 hour past AND Print Status
+      // is not Running or Complete. Uses the Monday column as source of truth
+      // instead of guessing from timing, so retrospective Start Now (with a past
+      // start time) doesn't false-alarm.
+      const overdueStartMs = 1 * 60 * 60 * 1000;
+      const isOverdueStart = !isPast && !isOverdue
+                             && (now - job.startDt) > overdueStartMs
+                             && job.printStatus !== PRINT_STATUS_ID.RUNNING
+                             && job.printStatus !== PRINT_STATUS_ID.COMPLETED;
       const contLeft   = lPct < 0;
       const contRight  = rPct > 100;
       const matCls     = MAT_CLASS[job.matId] || 'mat-other';
       const criticalCls = job.priorityId === 2 ? 'critical' : '';
+      const overdueCls  = isOverdue ? 'overdue-end' : (isOverdueStart ? 'overdue-start' : '');
+      const overdueStartBadge = isOverdueStart ? '<span class="overdue-start-badge">\u26A0 START?</span>' : '';
 
-      html += `<div class="job-block ${isPast?'past':''} ${isNow?'active':''} ${contRight?'continues-right':''} ${contLeft?'continues-left':''} ${matCls} ${criticalCls}"
+      html += `<div class="job-block ${isPast?'past':''} ${isNow?'active':''} ${contRight?'continues-right':''} ${contLeft?'continues-left':''} ${matCls} ${criticalCls} ${overdueCls}"
         style="left:${clampL.toFixed(3)}%;width:${clampW.toFixed(3)}%"
         onclick='showDetail(${JSON.stringify({id:job.id,name:job.name,start:job.startDt?.toISOString(),end:jEnd?.toISOString(),duration:job.duration,matId:job.matId,priorityId:job.priorityId,buildHeightId:job.buildHeightId,printer:name})})'
         onmouseenter="showTip(event,'${esc(job.name)}','${fmtTime(job.startDt)}','${fmtTime(jEnd)}','${job.duration?job.duration+'h':'—'}','${MAT_NAME[job.matId]||'—'}')"
         onmouseleave="hideTip()">
+        ${overdueStartBadge}
         <div class="job-inner">
           <div class="job-name">${esc(job.name)}</div>
           <div class="job-times">${fmtTime(job.startDt)}${jEnd?' → '+fmtTime(jEnd):''}</div>
@@ -1354,6 +1492,7 @@ function renderDetailBody(data) {
           <div class="dp-actions" style="margin-top:10px">
             <button class="dp-btn dp-btn-move-last" onclick="confirmAssign('schedule')">&#9654; Schedule</button>
             <button class="dp-btn dp-btn-move-next" onclick="confirmAssign('next')">&#9654;&#9654; Start Next</button>
+            <button class="dp-btn dp-btn-delay" onclick="confirmAssign('delay')">&#9200; Delay Job</button>
           </div>`
       }
       <div id="dp-confirm-area"></div>
@@ -1379,6 +1518,32 @@ function confirmAssign(type = 'schedule') {
   const printerName = PRINTER_GROUPS[gid] || gid;
   const area        = document.getElementById('dp-confirm-area');
   if (!area) return;
+
+  // Delay flow — show date/time picker
+  if (type === 'delay') {
+    const defaults = getDelayDefaults();
+    area.innerHTML = `
+      <div class="dp-confirm" style="margin-top:10px;border-color:rgba(255,179,0,.3)">
+        <div class="dp-confirm-msg">Assign <strong>${esc(currentDetailData?.name||'')}</strong> to <strong>${printerName}</strong> with delayed start:</div>
+        <div class="delay-picker">
+          <div class="delay-row">
+            <span class="delay-lbl">Date</span>
+            <input type="date" class="delay-input" id="delay-date" value="${defaults.date}" />
+          </div>
+          <div class="delay-row">
+            <span class="delay-lbl">Time</span>
+            <input type="time" class="delay-input" id="delay-time" value="${defaults.time}" />
+            
+          </div>
+          <div class="delay-hint" style="margin-top:2px">Downstream jobs will cascade forward if they overlap.</div>
+        </div>
+        <div class="dp-confirm-btns" style="margin-top:10px">
+          <button class="dp-confirm-yes-delay" onclick="executeAssign('${gid}','delay')">&#9200; Confirm Delay</button>
+          <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
+        </div>
+      </div>`;
+    return;
+  }
 
   const isNext = type === 'next';
 
@@ -1432,7 +1597,27 @@ async function executeAssign(gid, type = 'schedule') {
   pendingOperation = true;
 
   try {
-    if (type === 'next') {
+    if (type === 'delay') {
+      // Delay: set Print Date + Start Time to picked values BEFORE moving so
+      // Lambda respects the pre-set time and cascades downstream if needed
+      const dateInput = document.getElementById('delay-date');
+      const timeInput = document.getElementById('delay-time');
+      const dateStr = dateInput?.value;
+      const timeStr = timeInput?.value; // "HH:MM" format
+      const [hourStr, minStr] = (timeStr || '').split(':');
+      const hour = parseInt(hourStr, 10);
+      const minute = parseInt(minStr, 10);
+
+      if (!dateStr || isNaN(hour) || hour < 0 || hour > 23 || isNaN(minute) || minute < 0 || minute > 59) {
+        throw new Error('Invalid delay date or time');
+      }
+
+      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: dateStr }));
+      await mondayMutate(data.id, COL.START_TIME, JSON.stringify({ hour, minute }));
+      await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.SCHEDULED] }));
+      await mondayMoveGroup(data.id, gid);
+
+    } else if (type === 'next') {
       // Set start time BEFORE moving so Lambda respects it and cascades
       const now = new Date();
       const activeJob = (printerJobs[gid]||[]).find(j =>
@@ -1443,11 +1628,13 @@ async function executeAssign(gid, type = 'schedule') {
       const hourVal = JSON.stringify({ hour: startTime.getHours(), minute: startTime.getMinutes() });
       await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: dateStr }));
       await mondayMutate(data.id, COL.START_TIME, hourVal);
+      await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.SCHEDULED] }));
       await mondayMoveGroup(data.id, gid);
     } else {
       // Schedule: clear dates then move so Lambda queues at end
       await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({}));
       await mondayMutate(data.id, COL.START_TIME, JSON.stringify({}));
+      await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.SCHEDULED] }));
       await mondayMoveGroup(data.id, gid);
     }
 
@@ -1489,6 +1676,7 @@ function updateMoveButtons() {
       <div class="dp-actions">
         <button class="dp-btn dp-btn-move-last" onclick="confirmMove('last')">&#9654; Schedule</button>
         <button class="dp-btn dp-btn-move-next" onclick="confirmMove('next')">&#9654;&#9654; Start Next</button>
+        <button class="dp-btn dp-btn-delay" onclick="confirmMove('delay')">&#9200; Delay Job</button>
       </div>`;
   }
 }
@@ -1514,7 +1702,34 @@ function confirmMove(type) {
 
   const gid         = val;
   const printerName = PRINTER_GROUPS[gid] || gid;
-  const isNext      = type === 'next';
+
+  // Delay flow — show date/time picker
+  if (type === 'delay') {
+    const defaults = getDelayDefaults();
+    area.innerHTML = `
+      <div class="dp-confirm" style="margin-top:10px;border-color:rgba(255,179,0,.3)">
+        <div class="dp-confirm-msg">Delay <strong>${esc(currentDetailData?.name||'')}</strong> on <strong>${printerName}</strong> to:</div>
+        <div class="delay-picker">
+          <div class="delay-row">
+            <span class="delay-lbl">Date</span>
+            <input type="date" class="delay-input" id="delay-date" value="${defaults.date}" />
+          </div>
+          <div class="delay-row">
+            <span class="delay-lbl">Time</span>
+            <input type="time" class="delay-input" id="delay-time" value="${defaults.time}" />
+            
+          </div>
+          <div class="delay-hint" style="margin-top:2px">Downstream jobs will cascade forward if they overlap.</div>
+        </div>
+        <div class="dp-confirm-btns" style="margin-top:10px">
+          <button class="dp-confirm-yes-delay" onclick="executeMove('${gid}','delay')">&#9200; Confirm Delay</button>
+          <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const isNext = type === 'next';
 
   const hasActive = (printerJobs[gid]||[]).some(j =>
     j.startDt && j.endDt && j.startDt <= new Date() && j.endDt >= new Date()
@@ -1534,6 +1749,16 @@ function confirmMove(type) {
         <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
       </div>
     </div>`;
+}
+
+// Helper to build default delay date/time (tomorrow at 06:00)
+function getDelayDefaults() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const y = tomorrow.getFullYear();
+  const m = String(tomorrow.getMonth()+1).padStart(2,'0');
+  const d = String(tomorrow.getDate()).padStart(2,'0');
+  return { date: `${y}-${m}-${d}`, time: '06:00' };
 }
 
 async function executeMove(gid, type) {
@@ -1579,14 +1804,37 @@ async function executeMove(gid, type) {
 
   try {
     if (type === 'queue') {
-      // Clear all dates, reset Printer column to Queue, move to Queue group
+      // Clear all dates, reset Printer column to Queue, clear Print Status,
+      // move to Queue group
       await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({}));
       await mondayMutate(data.id, COL.START_TIME,  JSON.stringify({}));
       await mondayMutate(data.id, COL.END_DATE,    JSON.stringify({}));
       await mondayMutate(data.id, COL.END_TIME,    JSON.stringify({}));
       await mondayMutate(data.id, COL.PRINTER,     JSON.stringify({ ids: [QUEUE_DROPDOWN_ID] }));
+      await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({}));
       await mondayMoveGroup(data.id, QUEUE_GROUP);
       setTimeout(() => { pendingOperation = false; autoRefresh(); }, 2000);
+
+    } else if (type === 'delay') {
+      // Delay: set Print Date + Start Time to picked values, Lambda cascades downstream
+      const dateInput = document.getElementById('delay-date');
+      const timeInput = document.getElementById('delay-time');
+      const dateStr = dateInput?.value;
+      const timeStr = timeInput?.value; // "HH:MM" format
+      const [hourStr, minStr] = (timeStr || '').split(':');
+      const hour = parseInt(hourStr, 10);
+      const minute = parseInt(minStr, 10);
+
+      if (!dateStr || isNaN(hour) || hour < 0 || hour > 23 || isNaN(minute) || minute < 0 || minute > 59) {
+        throw new Error('Invalid delay date or time');
+      }
+
+      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: dateStr }));
+      await mondayMutate(data.id, COL.START_TIME, JSON.stringify({ hour, minute }));
+      await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.SCHEDULED] }));
+      await mondayMoveGroup(data.id, gid);
+      setTimeout(() => { pendingOperation = false; autoRefresh(); }, 4000);
+      setTimeout(() => autoRefresh(), 8000);
 
     } else if (type === 'next') {
       const now = new Date();
@@ -1599,6 +1847,7 @@ async function executeMove(gid, type) {
       const hourVal = JSON.stringify({ hour: startTime.getHours(), minute: startTime.getMinutes() });
       await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: dateStr }));
       await mondayMutate(data.id, COL.START_TIME, hourVal);
+      await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.SCHEDULED] }));
       await mondayMoveGroup(data.id, gid);
       setTimeout(() => { pendingOperation = false; autoRefresh(); }, 4000);
       setTimeout(() => autoRefresh(), 8000);
@@ -1607,6 +1856,7 @@ async function executeMove(gid, type) {
       // Schedule: clear dates first so Lambda queues at end
       await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({}));
       await mondayMutate(data.id, COL.START_TIME, JSON.stringify({}));
+      await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.SCHEDULED] }));
       await mondayMoveGroup(data.id, gid);
       setTimeout(() => { pendingOperation = false; autoRefresh(); }, 4000);
       setTimeout(() => autoRefresh(), 8000);
@@ -1654,9 +1904,36 @@ function confirmAction(type) {
   const confirmLabel = isStart ? '&#9654; Confirm Start' : '&#9632; Confirm End';
   const borderColor  = isStart ? 'rgba(0,230,118,.25)' : 'rgba(255,179,0,.25)';
 
-  const msg = isStart
-    ? `Set <strong>Print Date to today</strong> and <strong>Start Time to ${nowStr}</strong>?<br>Downstream jobs will cascade automatically.`
-    : `Set <strong>End Time to ${nowStr}</strong> and move this job to <strong>Print Completed</strong>?`;
+  if (isStart) {
+    // Check for overdue End Now jobs on the same printer lane first
+    const data = currentDetailData;
+    const sourceGid = data && Object.entries(PRINTER_GROUPS).find(
+      ([,name]) => name === data.printer
+    )?.[0];
+
+    if (sourceGid) {
+      const overdueMs = 2 * 60 * 60 * 1000;
+      const overdueJobs = (printerJobs[sourceGid]||[]).filter(j =>
+        j.id !== data.id &&
+        j.endDt &&
+        (now - j.endDt) > overdueMs
+      );
+
+      if (overdueJobs.length > 0) {
+        // Prompt about the oldest overdue job first
+        overdueJobs.sort((a,b) => a.endDt - b.endDt);
+        const oldestOverdue = overdueJobs[0];
+        showOverdueEndPrompt(oldestOverdue, data.printer);
+        return;
+      }
+    }
+
+    // No overdue jobs — proceed with Start Now picker
+    showStartTimePicker(now, area, confirmClass, confirmLabel, borderColor);
+    return;
+  }
+
+  const msg = `Set <strong>End Time to ${nowStr}</strong> and move this job to <strong>Print Completed</strong>?`;
 
   area.innerHTML = `
     <div class="dp-confirm" style="margin-top:10px;border-color:${borderColor}">
@@ -1666,6 +1943,125 @@ function confirmAction(type) {
         <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
       </div>
     </div>`;
+}
+
+function showStartTimePicker(now, area, confirmClass, confirmLabel, borderColor) {
+  // Build default datetime-local value (now, rounded to minute)
+  const pad = n => String(n).padStart(2,'0');
+  const nowLocal = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  const past24 = new Date(now.getTime() - 24*60*60*1000);
+  const minLocal = `${past24.getFullYear()}-${pad(past24.getMonth()+1)}-${pad(past24.getDate())}T${pad(past24.getHours())}:${pad(past24.getMinutes())}`;
+
+  area.innerHTML = `
+    <div class="dp-confirm" style="margin-top:10px;border-color:${borderColor}">
+      <div class="dp-confirm-msg">Record when this print actually started:</div>
+      <div class="delay-picker">
+        <div class="delay-row">
+          <span class="delay-lbl">Time</span>
+          <input type="datetime-local" class="delay-input" id="start-time-input"
+            value="${nowLocal}" min="${minLocal}" max="${nowLocal}" step="60" />
+        </div>
+        <div class="delay-hint" id="start-time-hint">Defaults to now. Downstream jobs will cascade if this changes the schedule.</div>
+        <div class="delay-hint" id="start-time-error" style="color:var(--red);display:none"></div>
+      </div>
+      <div class="dp-confirm-btns" style="margin-top:10px">
+        <button class="${confirmClass}" onclick="executeAction('start')">${confirmLabel}</button>
+        <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
+      </div>
+    </div>`;
+}
+
+function showOverdueEndPrompt(overdueJob, printerName) {
+  const area = document.getElementById('dp-confirm-area');
+  if (!area) return;
+
+  const scheduledEndStr = fmtDateTime(overdueJob.endDt);
+  const now = new Date();
+  const hoursOverdue = Math.floor((now - overdueJob.endDt) / 3600000);
+
+  area.innerHTML = `
+    <div class="dp-confirm" style="margin-top:10px;border-color:rgba(255,179,0,.5);background:rgba(255,179,0,.08)">
+      <div class="dp-confirm-msg">
+        <strong style="color:var(--yellow)">⚠ Previous job not marked complete</strong><br><br>
+        <strong>${esc(overdueJob.name)}</strong> on <strong>${printerName}</strong> was scheduled to end
+        <strong>${scheduledEndStr}</strong> (${hoursOverdue}h ago) but hasn't been marked complete.<br><br>
+        Did it complete successfully?
+      </div>
+      <div class="dp-confirm-btns" style="flex-direction:column;gap:6px">
+        <button class="dp-confirm-yes-end" onclick="markOverdueComplete('${overdueJob.id}')">
+          Yes
+        </button>
+        <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
+      </div>
+      <div style="margin-top:12px;padding:10px;background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.2);border-radius:5px;font-size:.75rem;color:var(--text-mid);line-height:1.5">
+        <strong style="color:var(--accent)">If Cancel:</strong> Verify the correct printer and job before starting. If the schedule doesn't match the shop floor, correct the schedule first (move to the right printer or clean up the previous job).
+      </div>
+    </div>`;
+}
+
+async function markOverdueComplete(overdueId) {
+  // Find the overdue job in state
+  let overdueJob = null;
+  let sourceGid = null;
+  for (const gid of Object.keys(PRINTER_GROUPS)) {
+    const found = (printerJobs[gid]||[]).find(j => j.id === overdueId);
+    if (found) { overdueJob = found; sourceGid = gid; break; }
+  }
+  if (!overdueJob || !sourceGid) return;
+
+  const status = document.getElementById('dp-action-status');
+  if (status) { status.className='dp-status loading'; status.textContent='Marking overdue job complete...'; }
+  document.querySelectorAll('.dp-btn').forEach(b => b.disabled = true);
+
+  try {
+    // Use the scheduled End Time (already set on the job) — don't change it
+    // Just move to Print Completed
+    const endDt = overdueJob.endDt;
+    const printerDropdownId = PRINTER_GROUP_TO_DROPDOWN[sourceGid];
+
+    // Optimistic update
+    printerJobs[sourceGid] = (printerJobs[sourceGid]||[]).filter(j => j.id !== overdueId);
+    if (!completedJobs[sourceGid]) completedJobs[sourceGid] = [];
+    completedJobs[sourceGid].push({
+      id: overdueJob.id,
+      name: overdueJob.name,
+      startDt: overdueJob.startDt,
+      endDt: endDt,
+      duration: overdueJob.duration,
+      matId: overdueJob.matId,
+      buildHeightId: overdueJob.buildHeightId,
+      priorityId: overdueJob.priorityId,
+      printerId: printerDropdownId,
+      completedAt: new Date().toISOString(),
+    });
+
+    pendingOperation = true;
+    render();
+
+    // Move to Print Completed group in Monday — End Date/Time are already set
+    await mondayMutate(overdueJob.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.COMPLETED] }));
+    await mondayMoveGroup(overdueJob.id, PRINT_COMPLETED_GROUP);
+
+    if (status) { status.className='dp-status ok'; status.textContent='✓ Marked complete. Now continuing Start Now...'; }
+
+    // After a brief pause, show the Start Now picker for the current job
+    setTimeout(() => {
+      pendingOperation = false;
+      const area = document.getElementById('dp-confirm-area');
+      if (area) {
+        showStartTimePicker(new Date(), area, 'dp-confirm-yes-start', '&#9654; Confirm Start', 'rgba(0,230,118,.25)');
+      }
+      document.querySelectorAll('.dp-btn').forEach(b => b.disabled = false);
+      autoRefresh();
+    }, 1500);
+
+  } catch(e) {
+    if (status) { status.className='dp-status err'; status.textContent='✗ Error: '+e.message; }
+    document.querySelectorAll('.dp-btn').forEach(b => b.disabled = false);
+    pendingOperation = false;
+    autoRefresh();
+  }
 }
 
 function cancelConfirm() {
@@ -1694,22 +2090,116 @@ async function executeAction(type) {
     const hourVal  = JSON.stringify({ hour: now.getHours(), minute: now.getMinutes() });
 
     if (type === 'start') {
-      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: dateStr }));
-      await mondayMutate(data.id, COL.START_TIME, hourVal);
+      // Read the picked start time from the datetime-local input
+      const picker = document.getElementById('start-time-input');
+      const errEl  = document.getElementById('start-time-error');
+      const hintEl = document.getElementById('start-time-hint');
+
+      if (!picker || !picker.value) {
+        if (errEl) { errEl.style.display='block'; errEl.textContent='Please select a start time.'; }
+        document.querySelectorAll('.dp-btn').forEach(b => b.disabled = false);
+        if (status) status.textContent = '';
+        return;
+      }
+
+      const picked = new Date(picker.value);
+      const past24 = new Date(now.getTime() - 24*60*60*1000);
+
+      // Validate: not in the future, not more than 24h ago
+      if (picked > now) {
+        if (errEl) { errEl.style.display='block'; errEl.textContent='Start Now cannot be a future time. Use Delay Job to schedule a future start.'; }
+        if (hintEl) hintEl.style.display='none';
+        document.querySelectorAll('.dp-btn').forEach(b => b.disabled = false);
+        if (status) status.textContent = '';
+        return;
+      }
+      if (picked < past24) {
+        if (errEl) { errEl.style.display='block'; errEl.textContent='Start time cannot be more than 24 hours ago.'; }
+        if (hintEl) hintEl.style.display='none';
+        document.querySelectorAll('.dp-btn').forEach(b => b.disabled = false);
+        if (status) status.textContent = '';
+        return;
+      }
+
+      // Build the write payload from the picked time (not "now")
+      const pickedDateStr = `${picked.getFullYear()}-${String(picked.getMonth()+1).padStart(2,'0')}-${String(picked.getDate()).padStart(2,'0')}`;
+      const pickedHourVal = JSON.stringify({ hour: picked.getHours(), minute: picked.getMinutes() });
+
+      await mondayMutate(data.id, COL.PRINT_DATE, JSON.stringify({ date: pickedDateStr }));
+      await mondayMutate(data.id, COL.START_TIME, pickedHourVal);
+      await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.RUNNING] }));
+
       if (status) { status.className='dp-status ok'; status.textContent='✓ Start time updated — cascading downstream jobs...'; }
-      setTimeout(() => { autoRefresh(); currentDetailData={...data,start:now.toISOString()}; renderDetailBody(currentDetailData); }, 3000);
+      setTimeout(() => { autoRefresh(); currentDetailData={...data,start:picked.toISOString()}; renderDetailBody(currentDetailData); }, 3000);
 
     } else if (type === 'end') {
-      await mondayMutate(data.id, COL.END_DATE, JSON.stringify({ date: dateStr }));
-      await mondayMutate(data.id, COL.END_TIME, hourVal);
-      await mondayMoveGroup(data.id, PRINT_COMPLETED_GROUP);
+      // Find which printer group this job belongs to (for optimistic completion)
+      const sourceGid = Object.entries(PRINTER_GROUPS).find(
+        ([,name]) => name === data.printer
+      )?.[0];
 
-      // Job moves to Print Completed group in Monday — autoRefresh will pick it
-      // up and place it in the correct printer lane history based on its
-      // Printer column value
+      // Determine the printer dropdown ID for this lane (for the optimistic completed block)
+      const printerDropdownId = sourceGid ? PRINTER_GROUP_TO_DROPDOWN[sourceGid] : null;
 
-      if (status) { status.className='dp-status ok'; status.textContent='✓ Job marked complete and moved to Print Completed'; }
-      setTimeout(() => { closeDetail(); autoRefresh(); }, 2000);
+      // Snapshot the job's original state for potential rollback
+      const originalJob = sourceGid
+        ? (printerJobs[sourceGid]||[]).find(j => j.id === data.id)
+        : null;
+
+      // ── Optimistic update ─────────────────────────────────────────────────
+      // Remove the job from its printer lane and add it to completedJobs
+      // immediately so the operator sees the hatched completed block right away
+      if (sourceGid) {
+        printerJobs[sourceGid] = (printerJobs[sourceGid]||[]).filter(j => j.id !== data.id);
+
+        if (!completedJobs[sourceGid]) completedJobs[sourceGid] = [];
+        completedJobs[sourceGid].push({
+          id: data.id,
+          name: data.name,
+          startDt: data.start ? new Date(data.start) : null,
+          endDt:   now, // actual end time = now
+          duration: data.duration,
+          matId: data.matId,
+          buildHeightId: data.buildHeightId,
+          priorityId: data.priorityId,
+          printerId: printerDropdownId,
+          completedAt: now.toISOString(),
+        });
+      }
+
+      // Block auto-refresh while Monday API processes and re-render immediately
+      pendingOperation = true;
+      render();
+
+      // Wrap the End Now flow in its own try/catch so we can roll back if any
+      // step fails (typically a network hiccup on the move_item_to_group call).
+      // Without rollback the job appears completed locally but is still in its
+      // lane in Monday, and the next refresh shows it back in the lane.
+      try {
+        await mondayMutate(data.id, COL.END_DATE, JSON.stringify({ date: dateStr }));
+        await mondayMutate(data.id, COL.END_TIME, hourVal);
+        await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.COMPLETED] }));
+        await mondayMoveGroup(data.id, PRINT_COMPLETED_GROUP);
+
+        if (status) { status.className='dp-status ok'; status.textContent='✓ Job marked complete and moved to Print Completed'; }
+        setTimeout(() => { closeDetail(); pendingOperation = false; autoRefresh(); }, 2000);
+      } catch(endErr) {
+        // Roll back the optimistic update so the operator sees the failure
+        if (sourceGid) {
+          completedJobs[sourceGid] = (completedJobs[sourceGid]||[]).filter(j => j.id !== data.id);
+          if (originalJob) {
+            printerJobs[sourceGid] = [...(printerJobs[sourceGid]||[]), originalJob];
+          }
+        }
+        pendingOperation = false;
+        render();
+
+        // Show a persistent error alert since the detail panel may have been closed
+        alert(`⚠ End Now failed for "${data.name}".\n\n${endErr.message}\n\nThe job has been restored to its printer lane. Please try again or check Monday.com directly.`);
+
+        if (status) { status.className='dp-status err'; status.textContent='✗ End Now failed — job restored to lane'; }
+        document.querySelectorAll('.dp-btn').forEach(b => b.disabled = false);
+      }
     }
 
   } catch(e) {
@@ -1834,12 +2324,41 @@ function updateAjActions() {
   if (!printerGid) {
     // Queue only — single button
     btns.innerHTML = `<button class="dp-btn dp-btn-move-last" id="aj-submit" onclick="submitAddJob('queue')">&#43; Add to Queue</button>`;
+    // Hide delay picker if it was showing
+    const picker = document.getElementById('aj-delay-picker');
+    if (picker) picker.style.display = 'none';
   } else {
-    // Printer selected — show Schedule and Start Next
+    // Printer selected — show Schedule, Start Next, and Delay
     btns.innerHTML = `
       <button class="dp-btn dp-btn-move-last" id="aj-submit" onclick="submitAddJob('schedule')">&#9654; Schedule</button>
-      <button class="dp-btn dp-btn-move-next" onclick="submitAddJob('next')">&#9654;&#9654; Start Next</button>`;
+      <button class="dp-btn dp-btn-move-next" onclick="submitAddJob('next')">&#9654;&#9654; Start Next</button>
+      <button class="dp-btn dp-btn-delay" onclick="showAjDelayPicker()">&#9200; Delay Job</button>`;
+    // Hide picker until they click Delay
+    const picker = document.getElementById('aj-delay-picker');
+    if (picker) picker.style.display = 'none';
   }
+}
+
+function showAjDelayPicker() {
+  const printerGid = document.getElementById('aj-printer').value;
+  if (!printerGid) return;
+
+  const defaults = getDelayDefaults();
+  const btns = document.getElementById('aj-action-btns');
+  btns.innerHTML = `
+    <div class="delay-picker" id="aj-delay-picker" style="width:100%">
+      <div class="delay-row">
+        <span class="delay-lbl">Date</span>
+        <input type="date" class="delay-input" id="aj-delay-date" value="${defaults.date}" />
+      </div>
+      <div class="delay-row">
+        <span class="delay-lbl">Time</span>
+        <input type="time" class="delay-input" id="aj-delay-time" value="${defaults.time}" />
+        
+      </div>
+    </div>
+    <button class="dp-btn dp-btn-delay" onclick="submitAddJob('delay')">&#9200; Create with Delay</button>
+    <button class="dp-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim)" onclick="updateAjActions()">Back</button>`;
 }
 
 async function submitAddJob(mode = 'queue') {
@@ -1861,6 +2380,9 @@ async function submitAddJob(mode = 'queue') {
   statEl.className = 'dp-status loading';
   statEl.textContent = 'Creating job...';
 
+  const targetGroup   = (mode !== 'queue' && printerGid) ? printerGid : QUEUE_GROUP;
+  const isQueueCreate = targetGroup === QUEUE_GROUP;
+
   try {
     const colVals = {
       [COL.MATERIAL_TYPE]: { ids: [Number(matId)] },
@@ -1881,7 +2403,36 @@ async function submitAddJob(mode = 'queue') {
       colVals[COL.START_TIME] = { hour: startTime.getHours(), minute: startTime.getMinutes() };
     }
 
-    const targetGroup = (mode !== 'queue' && printerGid) ? printerGid : QUEUE_GROUP;
+    // For Delay — pre-set start date/hour from the picker
+    if (mode === 'delay' && printerGid) {
+      const dateInput = document.getElementById('aj-delay-date');
+      const timeInput = document.getElementById('aj-delay-time');
+      const dateStr = dateInput?.value;
+      const timeStr = timeInput?.value; // "HH:MM" format
+      const [hourStr, minStr] = (timeStr || '').split(':');
+      const hour = parseInt(hourStr, 10);
+      const minute = parseInt(minStr, 10);
+
+      if (!dateStr || isNaN(hour) || hour < 0 || hour > 23 || isNaN(minute) || minute < 0 || minute > 59) {
+        errEl.textContent='Invalid delay date or time.';
+        errEl.style.display='block';
+        statEl.textContent='';
+        document.querySelectorAll('#aj-action-btns .dp-btn').forEach(b => b.disabled = false);
+        return;
+      }
+      colVals[COL.PRINT_DATE] = { date: dateStr };
+      colVals[COL.START_TIME] = { hour, minute };
+    }
+
+    // Set Printer column to match target group (Monday automation only handles Queue creates)
+    const printerDropdownId = PRINTER_GROUP_TO_DROPDOWN[targetGroup];
+    if (printerDropdownId) {
+      colVals[COL.PRINTER] = { ids: [printerDropdownId] };
+      // Set Print Status = Scheduled for jobs going to a printer lane
+      // (Queue jobs get no status)
+      colVals[COL.PRINT_STATUS] = { ids: [PRINT_STATUS_ID.SCHEDULED] };
+    }
+
     const columnValuesStr = JSON.stringify(JSON.stringify(colVals));
 
     const mutation = `mutation {
@@ -1897,10 +2448,42 @@ async function submitAddJob(mode = 'queue') {
     const newId = result?.create_item?.id;
     if (!newId) throw new Error('Item creation failed — no ID returned');
 
-    statEl.className = 'dp-status ok';
-    statEl.textContent = `✓ "${name}" created${mode !== 'queue' ? ' and scheduled' : ' in Queue'}`;
+    // ── Optimistic update — instantly show the job in its target lane ────────
+    const placeholder = {
+      id: newId,
+      name: name,
+      startDt: null,
+      endDt: null,
+      duration: null,
+      matId: Number(matId),
+      buildHeightId: Number(heightId),
+      priorityId: priorityId !== null ? Number(priorityId) : null,
+      pending: !isQueueCreate, // queue jobs aren't scheduled, no pulse needed
+    };
 
-    setTimeout(() => { closeAddJob(); autoRefresh(); }, 1500);
+    if (isQueueCreate) {
+      queueJobs = [...queueJobs, placeholder];
+    } else {
+      if (!printerJobs[targetGroup]) printerJobs[targetGroup] = [];
+      printerJobs[targetGroup] = [...printerJobs[targetGroup], placeholder];
+    }
+
+    statEl.className = 'dp-status ok';
+    statEl.textContent = `✓ "${name}" created${mode==='delay' ? ' with delayed start' : !isQueueCreate ? ' and scheduling...' : ' in Queue'}`;
+
+    // Close modal immediately and render to show the placeholder
+    closeAddJob();
+    render();
+
+    // Block refresh while Lambda schedules, then load real data
+    if (!isQueueCreate) {
+      pendingOperation = true;
+      setTimeout(() => { pendingOperation = false; autoRefresh(); }, 4000);
+      setTimeout(() => autoRefresh(), 8000);
+    } else {
+      // Queue creates — just refresh once to pick up the real item from Monday
+      setTimeout(() => autoRefresh(), 2000);
+    }
 
   } catch(e) {
     statEl.className = 'dp-status err';
