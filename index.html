@@ -403,6 +403,7 @@
     .delay-input { flex:1; background:var(--surface); border:1px solid var(--border2); border-radius:5px; padding:8px 12px; color:var(--text); font-family:var(--mono); font-size:.85rem; font-weight:600; }
     .delay-input:focus { outline:none; border-color:var(--yellow); }
     .delay-hint { font-size:.68rem; color:var(--text-dim); font-family:var(--mono); }
+    .delay-preview { font-size:.92rem; font-weight:800; color:var(--yellow); background:rgba(255,179,0,.08); border:1px solid rgba(255,179,0,.25); border-radius:5px; padding:8px 12px; text-align:center; }
     .dp-confirm-yes-move-next { flex:1; padding:11px; border:1px solid rgba(167,139,250,.4); border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:var(--surface2); color:#a78bfa; transition:all .15s; }
     .dp-confirm-yes-move-next:hover { background:rgba(167,139,250,.1); border-color:#a78bfa; }
     .dp-confirm-yes-move-last { flex:1; padding:11px; border:none; border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:linear-gradient(135deg,var(--accent2),var(--accent)); color:#000; transition:all .15s; }
@@ -1528,13 +1529,13 @@ function confirmAssign(type = 'schedule') {
         <div class="delay-picker">
           <div class="delay-row">
             <span class="delay-lbl">Date</span>
-            <input type="date" class="delay-input" id="delay-date" value="${defaults.date}" />
+            <input type="date" class="delay-input" id="delay-date" value="${defaults.date}" oninput="updateDelayPreview('delay-date','delay-time','delay-preview')" />
           </div>
           <div class="delay-row">
             <span class="delay-lbl">Time</span>
-            <input type="time" class="delay-input" id="delay-time" value="${defaults.time}" />
-            
+            <input type="time" class="delay-input" id="delay-time" value="${defaults.time}" oninput="updateDelayPreview('delay-date','delay-time','delay-preview')" />
           </div>
+          <div class="delay-preview" id="delay-preview"></div>
           <div class="delay-hint" style="margin-top:2px">Downstream jobs will cascade forward if they overlap.</div>
         </div>
         <div class="dp-confirm-btns" style="margin-top:10px">
@@ -1542,6 +1543,7 @@ function confirmAssign(type = 'schedule') {
           <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
         </div>
       </div>`;
+    updateDelayPreview('delay-date','delay-time','delay-preview');
     return;
   }
 
@@ -1721,13 +1723,13 @@ function confirmMove(type) {
         <div class="delay-picker">
           <div class="delay-row">
             <span class="delay-lbl">Date</span>
-            <input type="date" class="delay-input" id="delay-date" value="${defaults.date}" />
+            <input type="date" class="delay-input" id="delay-date" value="${defaults.date}" oninput="updateDelayPreview('delay-date','delay-time','delay-preview')" />
           </div>
           <div class="delay-row">
             <span class="delay-lbl">Time</span>
-            <input type="time" class="delay-input" id="delay-time" value="${defaults.time}" />
-            
+            <input type="time" class="delay-input" id="delay-time" value="${defaults.time}" oninput="updateDelayPreview('delay-date','delay-time','delay-preview')" />
           </div>
+          <div class="delay-preview" id="delay-preview"></div>
           <div class="delay-hint" style="margin-top:2px">Downstream jobs will cascade forward if they overlap.</div>
         </div>
         <div class="dp-confirm-btns" style="margin-top:10px">
@@ -1735,6 +1737,7 @@ function confirmMove(type) {
           <button class="dp-confirm-no" onclick="cancelConfirm()">Cancel</button>
         </div>
       </div>`;
+    updateDelayPreview('delay-date','delay-time','delay-preview');
     return;
   }
 
@@ -1767,6 +1770,31 @@ function getDelayDefaults() {
   const m = String(today.getMonth()+1).padStart(2,'0');
   const d = String(today.getDate()).padStart(2,'0');
   return { date: `${y}-${m}-${d}`, time: '06:00' };
+}
+
+// Live preview of the picked delay date/time in unambiguous long format,
+// e.g. "Saturday, July 12 at 7:00 PM" — helps operators catch AM/PM mistakes
+// before confirming, since the compact time input is easy to misread.
+function updateDelayPreview(dateInputId, timeInputId, previewId) {
+  const dateEl = document.getElementById(dateInputId);
+  const timeEl = document.getElementById(timeInputId);
+  const previewEl = document.getElementById(previewId);
+  if (!dateEl || !timeEl || !previewEl) return;
+
+  const dateStr = dateEl.value;
+  const timeStr = timeEl.value;
+  if (!dateStr || !timeStr) { previewEl.textContent = ''; return; }
+
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const [h, min] = timeStr.split(':').map(Number);
+  if ([y,m,d,h,min].some(isNaN)) { previewEl.textContent = ''; return; }
+
+  const dt = new Date(y, m - 1, d, h, min);
+  if (isNaN(dt.getTime())) { previewEl.textContent = ''; return; }
+
+  const dayLabel = dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const timeLabel = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  previewEl.textContent = `\u2192 ${dayLabel} at ${timeLabel}`;
 }
 
 async function executeMove(gid, type) {
@@ -2364,15 +2392,17 @@ function showAjDelayPicker() {
     <div class="delay-picker" id="aj-delay-picker" style="margin-top:0">
       <div class="delay-row">
         <span class="delay-lbl">Date</span>
-        <input type="date" class="delay-input" id="aj-delay-date" value="${defaults.date}" />
+        <input type="date" class="delay-input" id="aj-delay-date" value="${defaults.date}" oninput="updateDelayPreview('aj-delay-date','aj-delay-time','aj-delay-preview')" />
       </div>
       <div class="delay-row">
         <span class="delay-lbl">Time</span>
-        <input type="time" class="delay-input" id="aj-delay-time" value="${defaults.time}" />
+        <input type="time" class="delay-input" id="aj-delay-time" value="${defaults.time}" oninput="updateDelayPreview('aj-delay-date','aj-delay-time','aj-delay-preview')" />
       </div>
+      <div class="delay-preview" id="aj-delay-preview"></div>
     </div>
     <button class="dp-btn dp-btn-delay" onclick="submitAddJob('delay')">&#9200; Create with Delay</button>
     <button class="dp-btn" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim)" onclick="updateAjActions()">Back</button>`;
+  updateDelayPreview('aj-delay-date','aj-delay-time','aj-delay-preview');
 }
 
 async function submitAddJob(mode = 'queue') {
