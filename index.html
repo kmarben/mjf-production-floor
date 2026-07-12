@@ -293,19 +293,23 @@
 
     /* Completed job blocks */
     .job-block.completed-block {
-      opacity: 0.35;
-      background-image: repeating-linear-gradient(
-        45deg,
-        rgba(0,0,0,0.15),
-        rgba(0,0,0,0.15) 3px,
-        transparent 3px,
-        transparent 9px
-      ) !important;
+      opacity: 0.7;
     }
-    .job-block.completed-block:hover { opacity: 0.6; }
+    .job-block.completed-block:hover { opacity: 1; }
     .mat-tpu   { background:linear-gradient(135deg,#5cb85c,#90ee90); }
     .mat-pa12  { background:linear-gradient(135deg,#e6b800,#ffd700); }
     .mat-other { background:linear-gradient(135deg,#1a5fd6,#4f6fff); }
+    /* Hatch overlay for completed blocks — layered ON TOP of the material
+       color gradient (not replacing it) so TPU/PA12 color still shows through */
+    .job-block.completed-block.mat-tpu {
+      background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.22), rgba(0,0,0,0.22) 3px, transparent 3px, transparent 9px), linear-gradient(135deg,#5cb85c,#90ee90) !important;
+    }
+    .job-block.completed-block.mat-pa12 {
+      background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.22), rgba(0,0,0,0.22) 3px, transparent 3px, transparent 9px), linear-gradient(135deg,#e6b800,#ffd700) !important;
+    }
+    .job-block.completed-block.mat-other {
+      background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.22), rgba(0,0,0,0.22) 3px, transparent 3px, transparent 9px), linear-gradient(135deg,#1a5fd6,#4f6fff) !important;
+    }
 
     /* ── Queue ── */
     #queue-section { flex-shrink:0; background:var(--surface); border-top:2px solid var(--border2); padding:10px 20px; }
@@ -402,6 +406,17 @@
     .delay-lbl { font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-dim); min-width:44px; }
     .delay-input { flex:1; background:var(--surface); border:1px solid var(--border2); border-radius:5px; padding:8px 12px; color:var(--text); font-family:var(--mono); font-size:.85rem; font-weight:600; }
     .delay-input:focus { outline:none; border-color:var(--yellow); }
+    /* Brighten the native calendar/clock picker icons — default is a dark
+       icon meant for light backgrounds, nearly invisible on our dark theme */
+    .delay-input::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.5);
+      cursor: pointer;
+      padding: 4px;
+      margin-left: 4px;
+    }
+    .delay-input::-webkit-calendar-picker-indicator:hover {
+      filter: invert(1) brightness(1.5) drop-shadow(0 0 3px var(--yellow));
+    }
     .delay-hint { font-size:.68rem; color:var(--text-dim); font-family:var(--mono); }
     .delay-preview { font-size:.92rem; font-weight:800; color:var(--yellow); background:rgba(255,179,0,.08); border:1px solid rgba(255,179,0,.25); border-radius:5px; padding:8px 12px; text-align:center; }
     .dp-confirm-yes-move-next { flex:1; padding:11px; border:1px solid rgba(167,139,250,.4); border-radius:6px; font-family:var(--font); font-size:.82rem; font-weight:800; cursor:pointer; background:var(--surface2); color:#a78bfa; transition:all .15s; }
@@ -574,7 +589,7 @@
 </div>
 
 <!-- Add Job Modal -->
-<div id="add-job-overlay" class="aj-overlay" onclick="closeAddJob()"></div>
+<div id="add-job-overlay" class="aj-overlay"></div>
 <div id="add-job-modal" class="aj-modal">
   <div class="aj-header">
     <span class="aj-title">Add New Job</span>
@@ -2339,6 +2354,11 @@ function openAddJob() {
   document.getElementById('aj-error').style.display = 'none';
   document.getElementById('aj-status').textContent = '';
   document.getElementById('aj-submit').disabled = false;
+  select.value = ''; // reset printer selection to "Queue only"
+
+  // Reset action buttons back to default (Add to Queue) — clears any leftover
+  // Delay picker HTML if the modal was closed while the picker was showing
+  updateAjActions();
 
   document.getElementById('add-job-overlay').classList.add('open');
   document.getElementById('add-job-modal').classList.add('open');
