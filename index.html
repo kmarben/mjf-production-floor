@@ -191,7 +191,8 @@
 
     /* Timeline area */
     .pr-timeline { flex:1; position:relative; height:var(--row-h); overflow:hidden; background:var(--surface3); min-width:900px; }
-    .pr-timeline.down-bg { background:repeating-linear-gradient(45deg,rgba(255,61,87,.04),rgba(255,61,87,.04) 5px,transparent 5px,transparent 15px); }
+    .pr-timeline.down-bg { background:repeating-linear-gradient(45deg,rgba(255,61,87,.10),rgba(255,61,87,.10) 5px,transparent 5px,transparent 15px), rgba(255,61,87,.05); }
+    .pr-timeline.maint-bg { background:repeating-linear-gradient(45deg,rgba(255,179,0,.10),rgba(255,179,0,.10) 5px,transparent 5px,transparent 15px), rgba(255,179,0,.05); }
 
     /* Grid lines */
     .grid-lines { position:absolute; inset:0; display:flex; pointer-events:none; }
@@ -1193,7 +1194,7 @@ function render() {
         ${statusBadge}
         <div class="pr-builds">${jobs.length} build${jobs.length!==1?'s':''}</div>
       </div>
-      <div class="pr-timeline ${isDown?'down-bg':''}" id="tl-${gid}">
+      <div class="pr-timeline ${isDown?'down-bg':status===2?'maint-bg':''}" id="tl-${gid}">
         <div class="grid-lines">${slots.map(()=>`<div class="grid-line"></div>`).join('')}</div>`;
 
     // Now line
