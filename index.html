@@ -951,8 +951,8 @@ async function loadData() {
       if (g.groupId === QUEUE_GROUP) queueJobs = g.jobs;
       else if (g.groupId === PRINT_COMPLETED_GROUP) {
         // Bucket completed jobs into printer lanes based on their Printer column value
-        // Filter to last 14 days based on End Date
-        const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+        // Filter to last 21 days based on End Date
+        const cutoff = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000);
         for (const job of g.jobs) {
           if (!job.endDt || job.endDt < cutoff) continue;
           const printerGroupId = PRINTER_DROPDOWN_TO_GROUP[job.printerId];
@@ -997,8 +997,8 @@ async function autoRefresh() {
       if (g.groupId === QUEUE_GROUP) queueJobs = g.jobs;
       else if (g.groupId === PRINT_COMPLETED_GROUP) {
         // Bucket completed jobs into printer lanes based on their Printer column value
-        // Filter to last 14 days based on End Date
-        const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+        // Filter to last 21 days based on End Date
+        const cutoff = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000);
         for (const job of g.jobs) {
           if (!job.endDt || job.endDt < cutoff) continue;
           const printerGroupId = PRINTER_DROPDOWN_TO_GROUP[job.printerId];
@@ -1034,9 +1034,9 @@ async function fetchAllData() {
   const activeGids = [...Object.keys(PRINTER_GROUPS), QUEUE_GROUP];
 
   // Print Completed uses a rules filter to only pull items with End Date
-  // in the last 14 days. This avoids the items_page limit issue when the
+  // in the last 21 days. This avoids the items_page limit issue when the
   // Print Completed group grows past 100 items.
-  const cutoffDate = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const cutoffDate = new Date(Date.now() - 21 * 24 * 60 * 60 * 1000);
   const cutoffStr = cutoffDate.getFullYear()+'-'+String(cutoffDate.getMonth()+1).padStart(2,'0')+'-'+String(cutoffDate.getDate()).padStart(2,'0');
   const completedQueryParams = `query_params:{rules:[{column_id:"${COL.END_DATE}",compare_value:["${cutoffStr}","EXACT"],operator:greater_than}]}`;
 
