@@ -1258,7 +1258,7 @@ function render() {
 
       html += `<div class="job-block ${isPast?'past':''} ${isNow?'active':''} ${contRight?'continues-right':''} ${contLeft?'continues-left':''} ${matCls} ${criticalCls} ${overdueCls}"
         style="left:${clampL.toFixed(3)}%;width:${clampW.toFixed(3)}%"
-        onclick='showDetail(${JSON.stringify({id:job.id,name:job.name,start:job.startDt?.toISOString(),end:jEnd?.toISOString(),duration:job.duration,matId:job.matId,priorityId:job.priorityId,buildHeightId:job.buildHeightId,printer:name})})'
+        onclick='showDetail(${JSON.stringify({id:job.id,name:job.name,start:job.startDt?.toISOString(),end:jEnd?.toISOString(),duration:job.duration,matId:job.matId,priorityId:job.priorityId,buildHeightId:job.buildHeightId,printer:name,printStatus:job.printStatus})})'
         onmouseenter="showTip(event,'${esc(job.name)}','${fmtTime(job.startDt)}','${fmtTime(jEnd)}','${job.duration?job.duration+'h':'—'}','${MAT_NAME[job.matId]||'—'}')"
         onmouseleave="hideTip()">
         ${overdueStartBadge}
@@ -1377,7 +1377,7 @@ function renderQueue() {
 
     groups[key].forEach(j => {
       const chipCls = MAT_CHIP[j.matId] || '';
-      html += `<div class="queue-chip ${chipCls}" onclick='showDetail(${JSON.stringify({id:j.id,name:j.name,start:null,end:null,duration:j.duration,matId:j.matId,priorityId:j.priorityId,printer:"Queue"})})'>${esc(j.name)}</div>`;
+      html += `<div class="queue-chip ${chipCls}" onclick='showDetail(${JSON.stringify({id:j.id,name:j.name,start:null,end:null,duration:j.duration,matId:j.matId,priorityId:j.priorityId,printer:"Queue",printStatus:j.printStatus})})'>${esc(j.name)}</div>`;
     });
 
     html += `</div></div>`;
@@ -1427,13 +1427,21 @@ function renderDetailBody(data) {
   if (sdt && edt && now >= sdt) prog = Math.min(100, ((now-sdt)/(edt-sdt))*100);
 
   const isQueued      = data.printer === 'Queue';
-  const isComplete    = edt && now > edt;
-  const hasStarted    = sdt && sdt <= now;
+  // Complete = Print Status explicitly says Completed. This is the source of
+  // truth — NOT whether "now" has passed the scheduled end time. A job can be
+  // well past its scheduled end and still need End Now clicked (that's
+  // exactly what the ⚠ END? badge is for), so time-based completion checks
+  // would incorrectly hide both buttons on overdue jobs.
+  const isComplete    = data.printStatus === PRINT_STATUS_ID.COMPLETED;
+  // Started = Print Status says Running, OR (as a fallback for jobs that
+  // predate Print Status tracking) the scheduled start time has passed.
+  const hasStarted    = data.printStatus === PRINT_STATUS_ID.RUNNING
+                        || (sdt && sdt <= now && data.printStatus == null);
   const isPrinterLane = !isQueued && !!Object.values(PRINTER_GROUPS).find(n => n === data.printer);
 
   // Start Now: show for scheduled jobs that are not complete
   const showStartBtn = !isQueued && sdt && !isComplete;
-  // End Now: show for jobs that have already started (past their start time)
+  // End Now: show for jobs that have already started (per Print Status) and are not complete
   const showEndBtn   = !isQueued && sdt && hasStarted && !isComplete;
 
   const nowStr = fmtDateTime(now);
@@ -2189,7 +2197,7 @@ async function executeAction(type) {
       await mondayMutate(data.id, COL.PRINT_STATUS, JSON.stringify({ ids: [PRINT_STATUS_ID.RUNNING] }));
 
       if (status) { status.className='dp-status ok'; status.textContent='✓ Start time updated — cascading downstream jobs...'; }
-      setTimeout(() => { autoRefresh(); currentDetailData={...data,start:picked.toISOString()}; renderDetailBody(currentDetailData); }, 3000);
+      setTimeout(() => { autoRefresh(); currentDetailData={...data,start:picked.toISOString(),printStatus:PRINT_STATUS_ID.RUNNING}; renderDetailBody(currentDetailData); }, 3000);
 
     } else if (type === 'end') {
       // Find which printer group this job belongs to (for optimistic completion)
