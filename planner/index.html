@@ -1067,6 +1067,15 @@ async function unplace(id){
   }catch(e){setConn('err','Write failed — '+e.message);}
 }
 async function removeItem(id){
+  const it=items.find(x=>x.id===id);
+  // Deleting the sandbox row for a job WE created on the floor would leave that
+  // job stranded there with nothing pointing at it. Make the user choose.
+  if(it && it.floorId && it.origin==='new'){
+    alert(`"${it.name}" exists on the production board as item ${it.floorId}.\n\n`+
+          `Deleting it here would leave that job stranded on the floor with nothing linking back to it.\n\n`+
+          `Use Recall first — that removes it from the floor — then delete it here.`);
+    return;
+  }
   items=items.filter(i=>i.id!==id);
   closeAll(); repack();
   try{ await gql(`mutation{delete_item(item_id:${id}){id}}`); }
@@ -1537,12 +1546,12 @@ function sfSum(act,dest){
   if(dest==='queue'){
     el.innerHTML=`${parts.join(' · ')}<br>
       Lands in the production queue with <b>no dates, no times, no status</b> — operators assign them.<br>
-      <span style="opacity:.75">Reversible from here.</span>`;
+      <span style="opacity:.75">Reversible until an operator assigns one — recall from the build's panel.</span>`;
   }else{
     const lanes=new Set(act.map(p=>p.lane)).size;
     const first=new Date(Math.min(...act.map(p=>p.start)));
     el.innerHTML=`${parts.join(' · ')} onto <b>${lanes} printer${lanes>1?'s':''}</b>, first starting <b>${fdt(first)}</b><br>
-      <span style="opacity:.75">Operators see these immediately. Reversible from here.</span>`;
+      <span style="opacity:.75">Operators see these immediately. Reversible until one is started — click the build on the chart to recall.</span>`;
   }
 }
 
@@ -1882,6 +1891,7 @@ function open_(id){
 
   document.getElementById('dp-t').textContent=it.name;
   const kind = it.pushed ? ['k-sent', it.origin==='queue' ? 'Scheduled — moved from the floor queue' : 'Sent — live on the production board']
+             : (it.committed && it.origin==='new') ? ['k-sent','Sent — waiting in the floor queue']
              : it.committed ? ['k-com','Committed — real floor job, still in the queue']
              : ['k-plan','Planned — hypothetical'];
   document.getElementById('dp-k').innerHTML=`<span class="dp-k ${kind[0]}">${kind[1]}</span>`;
@@ -1903,7 +1913,7 @@ function open_(id){
       ${it.floorId?`<div class="dp-r"><span class="dp-l">Floor item</span><span class="dp-v" style="color:var(--orange)">${it.floorId}</span></div>`:''}
     </div>
     ${prioBtns?`<div><div class="dp-s">Priority</div>${prioBtns}</div>`:''}
-    ${it.pushed ? (lj && lj.status===FLOOR_RUNNING ? `
+    ${(it.pushed || (it.floorId && it.origin==='new')) ? (lj && lj.status===FLOOR_RUNNING ? `
     <div><div class="dp-s">Running on the floor</div>
       <div class="note" style="background:rgba(255,61,87,.1);border:1px solid rgba(255,61,87,.4);color:var(--red)">
         &#9654; An operator has <b>started this print</b>. It can't be recalled from here — the powder is already down.
@@ -1914,8 +1924,10 @@ function open_(id){
       <div class="note" style="background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.3);color:var(--green)">
         ${it.origin==='queue'
           ? `Moved out of the floor queue into its lane. This is <b>real customer work</b> (floor item ${it.floorId}) — recalling returns it to the queue, it is never deleted.`
+          : it.committed
+          ? `Sent to the <b>floor queue</b> as item <b>${it.floorId}</b>, unscheduled. Operators can see it and assign it. Recalling deletes it — we created it, so it's ours to remove.`
           : `Sent to the floor as item <b>${it.floorId}</b>. Operators can see it. Recalling deletes it — we created it, so it's ours to remove.`}
-        <br><b>Reversible until an operator starts it.</b>
+        <br><b>Reversible until an operator ${it.committed?'assigns':'starts'} it.</b>
       </div>
       <div class="acts" style="margin-top:9px">
         <button class="btn b-del" onclick="recall('${it.id}')">&#8617; ${it.origin==='queue'?'Return to floor queue':'Recall from production board'}</button>
