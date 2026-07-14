@@ -76,6 +76,8 @@
   .btn-send.armed{background:linear-gradient(135deg,#0e8a6e,#00e676);border:none;color:#000}
   .btn-dim{background:var(--surface2);border:1px solid var(--border2);color:var(--text-mid)}
   .btn-dim.armed{border-color:rgba(223,47,74,.5);color:#df2f4a}
+  .help-btn{font-family:var(--font);font-size:.65rem;font-weight:600;padding:3px 9px;border:1px solid rgba(0,200,255,.3);border-radius:3px;cursor:pointer;background:var(--surface2);color:var(--accent);white-space:nowrap;flex-shrink:0;transition:all .15s}
+  .help-btn:hover{border-color:var(--accent);background:rgba(0,200,255,.1)}
   .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0}
   .conn-ok{background:var(--green);box-shadow:0 0 6px var(--green)}
   .conn-err{background:var(--red);box-shadow:0 0 6px var(--red)}
@@ -490,6 +492,7 @@
     <div class="conn-dot" id="dot"></div>
     <div class="upd soft" id="upd">Not loaded</div>
     <button class="nbtn" onclick="loadAll()">&#8635;</button>
+    <button class="help-btn" onclick="openHelp()" title="Open planner quick reference">&#x2139; Help</button>
     <button class="nbtn" onclick="togPop(event)">&#9881;</button>
     <button class="primary-btn" onclick="openAutoPlace()">&#9889; Auto-place</button>
     <button class="primary-btn btn-send" id="b-send" disabled onclick="openSend()">&#8593; Send to floor</button>
@@ -813,6 +816,13 @@ async function replanGhosts(){
   await loadAll();
 }
 function setConn(s,t){document.getElementById('dot').className='conn-dot conn-'+s;document.getElementById('upd').textContent=t;}
+
+// Opens the planner quick reference PDF in a new tab. Relative path — the PDF
+// sits beside this file in /planner/, exactly as the floor app's guide sits
+// beside index.html in the repo root.
+function openHelp(){
+  window.open('MJF-Planner-Quick-Reference.pdf','_blank');
+}
 
 // Duration chain — MUST match the Lambda's parseItemSchedule() and the floor
 // app's parseJob() exactly, in this order:
