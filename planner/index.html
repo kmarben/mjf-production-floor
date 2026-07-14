@@ -1,0 +1,1980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MJF Production Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0d0f14;--surface:#13151c;--surface2:#1a1d27;--surface3:#20243280;
+    --border:#2a2f42;--border2:#343a52;
+    --accent:#00c8ff;--accent2:#4f6fff;--violet:#a78bfa;
+    --green:#00e676;--yellow:#ffb300;--red:#ff3d57;--blue:#448aff;--orange:#ff9f43;
+    --text:#e8edf5;--text-dim:#5a6480;--text-mid:#8892aa;
+    --font:'Manrope',system-ui,sans-serif;--mono:'Share Tech Mono',monospace;
+    --row-h:94px;--label-w:196px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);display:flex;flex-direction:column;overflow:hidden}
+
+  #cfg{background:linear-gradient(90deg,rgba(167,139,250,.12),rgba(0,200,255,.12));border-bottom:1px solid var(--violet);padding:8px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;overflow:hidden;transition:max-height .35s,padding .35s,opacity .35s;max-height:60px}
+  #cfg.collapsed{max-height:0;padding-top:0;padding-bottom:0;opacity:0;pointer-events:none}
+  #cfg label{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--violet);white-space:nowrap}
+  #cfg input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:6px 11px;color:var(--text);font-family:var(--mono);font-size:.8rem;min-width:0}
+  #cfg input:focus{outline:none;border-color:var(--accent)}
+  .cfg-btn{font-family:var(--font);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 16px;border:none;border-radius:5px;cursor:pointer;background:linear-gradient(135deg,var(--violet),var(--accent));color:#000}
+
+  header{background:var(--surface);border-bottom:2px solid var(--border2);padding:8px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap}
+  .logo{width:29px;height:29px;background:linear-gradient(135deg,var(--violet),var(--accent));clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);flex-shrink:0}
+  h1{font-size:1rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+  h1 span{color:var(--violet)}
+  .tag{font-size:.53rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--violet);background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.35);border-radius:3px;padding:3px 7px}
+  .hdr-sep{flex:1}
+
+  .metrics{display:flex;gap:6px;min-width:0;overflow:hidden}
+  /* The action buttons are the one thing that must never be wrapped off-screen.
+     Everything soft (metrics, status text) shrinks before these move. */
+  .acts-hdr{display:flex;gap:6px;flex-shrink:0;margin-left:auto;align-items:center}
+  .soft{min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .metric{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 13px 8px;text-align:center;min-width:66px;position:relative;overflow:hidden}
+  .metric::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--border2)}
+  .m-live::before{background:var(--blue)} .m-com::before{background:var(--orange)}
+  .m-plan::before{background:var(--violet)} .m-util::before{background:var(--accent)}
+  .m-sent::before{background:var(--green)} .m-sent .metric-val{color:var(--green)}
+  .m-hrs::before{background:var(--text-dim)} .m-hrs .metric-val{color:var(--text)}
+  .metric-val{font-size:1.25rem;font-weight:800;line-height:1;font-family:var(--mono)}
+  .m-live .metric-val{color:var(--blue)} .m-com .metric-val{color:var(--orange)}
+  .m-plan .metric-val{color:var(--violet)} .m-util .metric-val{color:var(--accent)}
+  .m-util.hot .metric-val{color:var(--red)}
+  .metric-lbl{font-size:.53rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--text-dim);white-space:nowrap}
+  /* The material split IS the number — build count alone hides the thing that
+     actually constrains the fleet, since TPU runs ~2h longer than PA12 at every
+     height. So the label goes on top and the two values get full size. */
+  .msplit{display:flex;gap:11px;justify-content:center;margin-top:5px}
+  .mv{display:flex;flex-direction:column;align-items:center;line-height:1}
+  .mv b{font-family:var(--mono);font-size:1.15rem;font-weight:800;line-height:1}
+  .mv i{font-style:normal;font-size:.5rem;font-weight:700;letter-spacing:.08em;color:var(--text-dim);margin-top:3px}
+  .mv.p b{color:#e6b800}
+  .mv.t b{color:#5cb85c}
+  .mv.z b{color:var(--text-dim);opacity:.4}
+
+  .view-toggle{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:3px;gap:3px}
+  .vbtn{font-family:var(--font);font-size:.66rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border:none;border-radius:3px;cursor:pointer;background:transparent;color:var(--text-dim)}
+  .vbtn.active{background:linear-gradient(135deg,var(--violet),var(--accent));color:#000}
+  .nbtn{font-family:var(--font);font-size:.66rem;font-weight:600;padding:5px 10px;border:1px solid var(--border2);border-radius:4px;cursor:pointer;background:var(--surface2);color:var(--text-mid)}
+  .nbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .date-badge{font-family:var(--mono);font-size:.73rem;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:5px 10px;white-space:nowrap;font-weight:600}
+  .primary-btn{font-family:var(--font);font-size:.68rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:7px 13px;border:none;border-radius:5px;cursor:pointer;background:linear-gradient(135deg,var(--violet),var(--accent));color:#000;white-space:nowrap}
+  .primary-btn:hover{filter:brightness(1.12)}
+  .primary-btn:disabled{opacity:.4;cursor:not-allowed;filter:none}
+  /* Send is dead grey until something is selected, then goes live green. The
+     colour change IS the affordance — you never wonder whether it will do
+     anything. */
+  .btn-send{background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim)}
+  .btn-send.armed{background:linear-gradient(135deg,#0e8a6e,#00e676);border:none;color:#000}
+  .btn-dim{background:var(--surface2);border:1px solid var(--border2);color:var(--text-mid)}
+  .btn-dim.armed{border-color:rgba(223,47,74,.5);color:#df2f4a}
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0}
+  .conn-ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+  .conn-err{background:var(--red);box-shadow:0 0 6px var(--red)}
+  .conn-sync{background:var(--yellow);box-shadow:0 0 6px var(--yellow);animation:pul 1s infinite}
+  @keyframes pul{0%,100%{opacity:1}50%{opacity:.35}}
+  .upd{font-family:var(--mono);font-size:.59rem;color:var(--text-dim);white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;flex-shrink:1}
+
+  #audit{display:none;flex-shrink:0;background:rgba(255,61,87,.12);border-bottom:1px solid rgba(255,61,87,.4);padding:8px 18px;font-size:.75rem;color:var(--red);line-height:1.5}
+  #audit b{font-weight:800}
+  #ghosts{display:none;flex-shrink:0;background:rgba(255,179,0,.1);border-bottom:1px solid rgba(255,179,0,.35);padding:8px 18px;font-size:.75rem;color:var(--yellow);line-height:1.5;align-items:center;gap:10px;flex-wrap:wrap}
+  #ghosts.show{display:flex}
+  #ghosts b{font-weight:800}
+  .gbtn{font-family:var(--font);font-size:.66rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:4px;cursor:pointer;background:var(--surface2);border:1px solid rgba(255,179,0,.5);color:var(--yellow);white-space:nowrap}
+  .gbtn:hover{background:rgba(255,179,0,.15)}
+  .gbtn.rep{border-color:rgba(167,139,250,.5);color:var(--violet)}
+  .gbtn.rep:hover{background:rgba(167,139,250,.12)}
+  #gantt-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column}
+  #gantt-scroll{flex:1;overflow:auto}
+
+  .tl-header{display:flex;position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:2px solid var(--border2)}
+  .tl-label-spacer{width:var(--label-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border2);display:flex;align-items:center;padding:0 13px;position:sticky;left:0;z-index:25}
+  .tl-label-spacer span{font-size:.6rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim)}
+  .tl-slots{display:flex;flex:1;min-width:920px}
+  .tl-slot{flex:1;text-align:center;padding:6px 2px;border-right:1px solid var(--border);background:var(--surface);min-width:0}
+  .tl-slot.today-col{background:rgba(167,139,250,.07)}
+  .tl-slot.blackout{background:rgba(255,61,87,.06)}
+  .tl-slot-main{font-size:.72rem;font-weight:700;color:var(--text-mid);line-height:1.2;white-space:nowrap;overflow:hidden}
+  .tl-slot-sub{font-size:.55rem;font-weight:600;color:var(--text-dim);line-height:1.2}
+
+  .printer-row{display:flex;border-bottom:1px solid var(--border);border-left:5px solid transparent}
+  .row-ready{border-left-color:var(--green)} .row-maint{border-left-color:var(--yellow)} .row-down{border-left-color:var(--red)}
+  .pr-label{width:var(--label-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border2);padding:8px 13px;display:flex;flex-direction:column;gap:4px;justify-content:center;position:sticky;left:0;z-index:15;box-shadow:4px 0 12px rgba(0,0,0,.5)}
+  .pr-name{font-size:.9rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+  .pr-badge{font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;width:fit-content}
+  .b-ready{color:var(--green);background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.3)}
+  .b-maint{color:var(--yellow);background:rgba(255,179,0,.12);border:1px solid rgba(255,179,0,.3)}
+  .b-down{color:var(--red);background:rgba(255,61,87,.12);border:1px solid rgba(255,61,87,.3)}
+  .pr-stat{font-size:.62rem;color:var(--text-dim);font-family:var(--mono)}
+  .pr-stat b{color:var(--violet)} .pr-stat i{color:var(--orange);font-style:normal}
+
+  .pr-timeline{flex:1;position:relative;height:var(--row-h);overflow:hidden;background:var(--surface3);min-width:920px}
+  .pr-timeline.down-bg{background:repeating-linear-gradient(45deg,rgba(255,61,87,.1),rgba(255,61,87,.1) 5px,transparent 5px,transparent 15px),rgba(255,61,87,.05)}
+  .grid-lines{position:absolute;inset:0;display:flex;pointer-events:none}
+  .grid-line{flex:1;border-right:1px solid rgba(42,47,66,.5)}
+  .grid-line.bo{background:rgba(255,61,87,.05)}
+  .now-line{position:absolute;top:0;bottom:0;width:2px;background:var(--blue);z-index:10;pointer-events:none;box-shadow:0 0 8px rgba(68,138,255,.6)}
+
+  .blk{position:absolute;top:7px;height:calc(var(--row-h) - 14px);border-radius:5px;overflow:hidden;z-index:5;min-width:3px}
+  .blk-in{height:100%;display:flex;flex-direction:column;justify-content:center;padding:0 9px;overflow:hidden}
+  .blk-n{font-size:.8rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .blk-t{font-size:.61rem;white-space:nowrap;margin-top:2px;font-family:var(--mono);font-weight:600}
+  .cl{border-top-left-radius:0;border-bottom-left-radius:0}
+  .cr{border-top-right-radius:0;border-bottom-right-radius:0}
+
+  /* LIVE — mirrored from the floor. Solid fill, locked. */
+  .blk.live{cursor:not-allowed;opacity:.8}
+  .blk.live .blk-n{color:#000} .blk.live .blk-t{color:rgba(0,0,0,.7)}
+  .blk.live::after{content:'\1F512';position:absolute;top:4px;right:6px;font-size:.58rem;opacity:.5}
+  /* Ours: sent from this plan, still recallable. Violet edge = "you can touch this". */
+  .blk.live.ours{cursor:pointer;opacity:1;box-shadow:inset 0 0 0 2px var(--violet)}
+  .blk.live.ours::after{content:'\21A9';color:var(--violet);opacity:1;font-weight:800}
+  .blk.live.ours:hover{filter:brightness(1.2)}
+  /* An operator pressed Start Now. It is physically printing. Hands off. */
+  .blk.live.ours.started{box-shadow:inset 0 0 0 2px var(--red);cursor:not-allowed}
+  .blk.live.ours.started::after{content:'\25B6';color:var(--red)}
+  .blk.live.running{box-shadow:0 0 0 2px var(--blue),0 0 14px rgba(68,138,255,.4);opacity:1}
+  .m1{background:linear-gradient(135deg,#e6b800,#ffd700)}
+  .m2{background:linear-gradient(135deg,#5cb85c,#90ee90)}
+
+  /* COMMITTED — real floor-queue work you chose to place. Solid border, half fill. */
+  .blk.com{cursor:pointer;border:2px solid var(--orange);transition:filter .12s}
+  .blk.com:hover{filter:brightness(1.3);z-index:8}
+  .blk.com.cm1{background:rgba(255,215,0,.2)} .blk.com.cm2{background:rgba(144,238,144,.2)}
+  .blk.com .blk-n{color:var(--text)} .blk.com .blk-t{color:var(--text-mid)}
+  .blk.com::before{content:'COMMITTED';position:absolute;top:3px;right:5px;font-size:.48rem;font-weight:800;letter-spacing:.06em;color:var(--orange);opacity:.85}
+
+  /* PLANNED — hypothetical. Dashed hatch, never mistakable for real. */
+  .blk.plan{cursor:pointer;border:2px dashed;background:var(--surface2);transition:filter .12s}
+  .blk.plan:hover{filter:brightness(1.35);z-index:8}
+  .blk.plan.pm1{border-color:#ffd700;background:repeating-linear-gradient(45deg,rgba(255,215,0,.13),rgba(255,215,0,.13) 6px,transparent 6px,transparent 13px)}
+  .blk.plan.pm2{border-color:#90ee90;background:repeating-linear-gradient(45deg,rgba(144,238,144,.13),rgba(144,238,144,.13) 6px,transparent 6px,transparent 13px)}
+  .blk.plan .blk-n{color:var(--text)} .blk.plan .blk-t{color:var(--text-mid)}
+  .blk.pinned::after{content:'\23F0';position:absolute;top:4px;right:6px;font-size:.6rem}
+
+  .blk.selectable{cursor:pointer}
+  .blk.sel{border:2px solid var(--violet) !important;box-shadow:0 0 0 2px rgba(167,139,250,.45),0 0 16px rgba(167,139,250,.5);z-index:9}
+  .blk.sel.sm1{background:linear-gradient(135deg,#e6b800,#ffd700);opacity:.9}
+  .blk.sel.sm2{background:linear-gradient(135deg,#5cb85c,#90ee90);opacity:.9}
+  .blk.sel .blk-n{color:#000} .blk.sel .blk-t{color:rgba(0,0,0,.72)}
+  .blk.sel::before{content:'\2713';position:absolute;top:3px;right:5px;width:14px;height:14px;border-radius:3px;background:var(--violet);color:#000;font-size:.62rem;font-weight:800;display:flex;align-items:center;justify-content:center;z-index:2}
+
+  /* SENT — written to the floor, not yet echoed back by the mirror. Pulses so
+     the handoff reads as in-flight rather than as a gap in the plan. */
+  .blk.sent{cursor:pointer;border:2px solid var(--green);background:rgba(0,230,118,.14);animation:sent-pulse 1.4s ease-in-out infinite}
+  .blk.sent .blk-n{color:var(--text)} .blk.sent .blk-t{color:var(--text-mid)}
+  .blk.sent::before{content:'SENT';position:absolute;top:3px;right:5px;font-size:.48rem;font-weight:800;letter-spacing:.06em;color:var(--green)}
+  @keyframes sent-pulse{0%,100%{opacity:.75}50%{opacity:1}}
+
+  /* Priority — Critical overrides the material border, mirroring the floor app,
+     so an urgent build reads as urgent before you read anything else. */
+  .blk.crit{border-color:#df2f4a !important;box-shadow:0 0 0 1px rgba(223,47,74,.5),0 0 12px rgba(223,47,74,.35)}
+  .blk.crit.plan{background:repeating-linear-gradient(45deg,rgba(223,47,74,.16),rgba(223,47,74,.16) 6px,transparent 6px,transparent 13px)}
+  .blk.crit.com{background:rgba(223,47,74,.2)}
+  .pdot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;flex-shrink:0;vertical-align:middle}
+  .pp{display:inline-block;padding:1px 5px;border-radius:2px;font-size:.53rem;font-weight:800;letter-spacing:.05em;font-family:var(--font);margin-left:5px}
+
+  #strips{flex-shrink:0;background:var(--surface);border-top:2px solid var(--border2);max-height:190px;overflow-y:auto}
+  .strip{padding:9px 18px;border-bottom:1px solid var(--border)}
+  .strip:last-child{border-bottom:none}
+  .s-head{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+  .s-title{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  .s-title.com{color:var(--orange)} .s-title.plan{color:var(--violet)}
+  .s-count{font-size:.68rem;font-weight:700;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:2px 8px;color:var(--text-dim)}
+  .s-note{font-size:.66rem;color:var(--text-dim);font-family:var(--mono)}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{font-size:.71rem;font-weight:700;padding:5px 10px;border-radius:4px;background:var(--surface2);cursor:pointer;white-space:nowrap;border:1px solid var(--border2);color:var(--text-mid)}
+  .chip small{opacity:.6;font-family:var(--mono);margin-left:5px;font-weight:600}
+  .chip.c-com{border:1px solid rgba(255,159,67,.5);color:var(--orange)}
+  .chip.c-com.done{opacity:.4;border-style:dashed}
+  .chip.c-plan{border:1px dashed rgba(167,139,250,.5);color:var(--violet)}
+  /* Material drives the chip colour, same as the floor app — material is what
+     sets duration and batching, so it earns the primary signal. Priority rides
+     along as a pill. */
+  .chip.qm-1{border-color:rgba(255,215,0,.55);color:#e6b800}
+  .chip.qm-2{border-color:rgba(144,238,144,.55);color:#5cb85c}
+  .chip.crit-chip{box-shadow:inset 3px 0 0 #df2f4a}
+  .chip:hover{filter:brightness(1.3)}
+  .s-empty{font-family:var(--mono);font-size:.7rem;color:var(--text-dim)}
+  .chip{position:relative;padding-right:26px}
+  .chip-x{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:15px;height:15px;border-radius:3px;border:none;background:transparent;color:inherit;opacity:.35;cursor:pointer;font-size:.62rem;font-weight:800;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
+  .chip-x:hover{opacity:1;background:rgba(255,61,87,.25);color:var(--red)}
+  .s-btn{margin-left:auto;font-family:var(--font);font-size:.65rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:6px 12px;border-radius:4px;cursor:pointer;white-space:nowrap}
+  .s-btn-com{background:rgba(255,159,67,.12);border:1px solid rgba(255,159,67,.45);color:var(--orange)}
+  .s-btn-com:hover{background:rgba(255,159,67,.22)}
+  .s-btn-plan{background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.45);color:var(--violet)}
+  .s-btn-plan:hover{background:rgba(167,139,250,.22)}
+  .s-btn:disabled{opacity:.35;cursor:not-allowed}
+
+  .ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:100}
+  .ov.open{display:block}
+  #dp{position:fixed;right:0;top:0;bottom:0;width:350px;background:var(--surface);border-left:2px solid var(--border2);z-index:101;overflow-y:auto;display:none;flex-direction:column}
+  #dp.open{display:flex}
+  .dp-h{padding:17px 20px;border-bottom:2px solid var(--border2);display:flex;align-items:flex-start;justify-content:space-between;gap:10px;background:var(--surface2)}
+  .dp-t{font-size:1.05rem;font-weight:800;line-height:1.3}
+  .dp-k{font-size:.55rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:3px;margin-top:5px;display:inline-block}
+  .k-com{background:rgba(255,159,67,.14);color:var(--orange)}
+  .k-plan{background:rgba(167,139,250,.14);color:var(--violet)}
+  .k-sent{background:rgba(0,230,118,.14);color:var(--green)}
+  .dp-x{background:none;border:1px solid var(--border2);cursor:pointer;color:var(--text-mid);font-size:.9rem;padding:5px 9px;border-radius:4px;font-weight:700}
+  .dp-x:hover{color:var(--red);border-color:var(--red)}
+  .dp-b{padding:15px 20px;display:flex;flex-direction:column;gap:14px}
+  .dp-s{font-size:.62rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim);margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--border2)}
+  .dp-r{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+  .dp-r:last-child{border-bottom:none}
+  .dp-l{font-size:.77rem;color:var(--text-mid)}
+  .dp-v{font-size:.82rem;font-weight:700;font-family:var(--mono)}
+  .acts{display:flex;flex-direction:column;gap:7px}
+  .btn{width:100%;padding:11px 13px;border:none;border-radius:6px;font-family:var(--font);font-size:.8rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+  .btn:hover{filter:brightness(1.15)}
+  .b-sched{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#000}
+  .b-next{background:var(--surface2);border:1px solid rgba(167,139,250,.4);color:var(--violet)}
+  .b-delay{background:var(--surface2);border:1px solid rgba(255,179,0,.4);color:var(--yellow)}
+  .b-un{background:var(--surface2);border:1px solid var(--border2);color:var(--text-mid)}
+  .b-del{background:var(--surface2);border:1px solid rgba(255,61,87,.4);color:var(--red)}
+  .sel{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 11px;color:var(--text);font-family:var(--font);font-size:.8rem;font-weight:600;cursor:pointer;margin-bottom:8px}
+  .sel:focus{outline:none;border-color:var(--violet)}
+  .pk{display:flex;flex-direction:column;gap:7px;padding:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;margin-bottom:8px}
+  .pk input{background:var(--surface);border:1px solid var(--border2);border-radius:5px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:.82rem;font-weight:600;width:100%}
+  .pk input:focus{outline:none;border-color:var(--yellow)}
+  .pk input::-webkit-calendar-picker-indicator{filter:invert(1) brightness(1.5);cursor:pointer}
+  .prev{font-size:.82rem;font-weight:800;color:var(--yellow);background:rgba(255,179,0,.08);border:1px solid rgba(255,179,0,.25);border-radius:5px;padding:7px 10px;text-align:center}
+  .note{border-radius:5px;padding:10px 12px;font-size:.74rem;line-height:1.55}
+  .n-com{background:rgba(255,159,67,.08);border:1px solid rgba(255,159,67,.25);color:var(--orange)}
+  .n-info{background:rgba(68,138,255,.08);border:1px solid rgba(68,138,255,.25);color:var(--blue)}
+
+  .modal{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:420px;max-width:95vw;background:var(--surface);border:2px solid var(--border2);border-radius:10px;z-index:101;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.7)}
+  .modal.open{display:flex}
+  .m-b{padding:17px 20px;display:flex;flex-direction:column;gap:13px}
+  .f{display:flex;flex-direction:column;gap:5px}
+  .fl{font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
+  .fi{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;color:var(--text);font-family:var(--font);font-size:.86rem;font-weight:600}
+  .fi:focus{outline:none;border-color:var(--violet)}
+  .opts{display:flex;gap:5px;flex-wrap:wrap}
+  .o{font-family:var(--font);font-size:.75rem;font-weight:700;padding:7px 13px;border:1px solid var(--border2);border-radius:5px;cursor:pointer;background:var(--surface2);color:var(--text-mid)}
+  .o.on{background:linear-gradient(135deg,var(--violet),var(--accent));color:#000;border-color:transparent}
+  .err{font-family:var(--mono);font-size:.73rem;color:var(--red);padding:7px 11px;background:rgba(255,61,87,.08);border:1px solid rgba(255,61,87,.2);border-radius:5px}
+
+  .pop{position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:13px;z-index:99;width:248px;display:none;box-shadow:0 12px 40px rgba(0,0,0,.7)}
+
+  /* Auto-place config */
+  #ap{width:560px;max-height:88vh}
+  #ap .m-b{overflow-y:auto;gap:15px}
+  .apg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .apsec{font-size:.6rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border2)}
+  .segs{display:flex;gap:4px;flex-wrap:wrap}
+  .seg{flex:1;min-width:0;font-family:var(--font);font-size:.7rem;font-weight:700;padding:8px 6px;border:1px solid var(--border2);border-radius:5px;cursor:pointer;background:var(--surface2);color:var(--text-mid);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seg.on{background:linear-gradient(135deg,var(--violet),var(--accent));color:#000;border-color:transparent}
+  .seg small{display:block;font-size:.56rem;font-weight:600;opacity:.75;margin-top:2px;text-transform:none;letter-spacing:0}
+  .seg.on small{opacity:.8}
+  .cks{display:flex;flex-wrap:wrap;gap:5px}
+  .ck{font-family:var(--font);font-size:.72rem;font-weight:700;padding:6px 11px;border:1px solid var(--border2);border-radius:5px;cursor:pointer;background:var(--surface2);color:var(--text-dim);user-select:none}
+  .ck.on{border-color:var(--violet);color:var(--violet);background:rgba(167,139,250,.1)}
+  .ck.off-down{opacity:.35;cursor:not-allowed;text-decoration:line-through}
+  .joblist{max-height:170px;overflow-y:auto;border:1px solid var(--border2);border-radius:6px;padding:8px;background:var(--surface2)}
+  /* Wide enough to actually grab. The 6px default thumb is a coin toss to hit. */
+  .joblist::-webkit-scrollbar,
+  .m-b::-webkit-scrollbar{width:12px}
+  .joblist::-webkit-scrollbar-track,
+  .m-b::-webkit-scrollbar-track{background:rgba(0,0,0,.25);border-radius:6px}
+  .joblist::-webkit-scrollbar-thumb,
+  .m-b::-webkit-scrollbar-thumb{background:var(--border2);border-radius:6px;border:2px solid transparent;background-clip:padding-box;min-height:34px}
+  .joblist::-webkit-scrollbar-thumb:hover,
+  .m-b::-webkit-scrollbar-thumb:hover{background:var(--violet);background-clip:padding-box}
+  .joblist,.m-b{scrollbar-width:auto;scrollbar-color:var(--border2) rgba(0,0,0,.25)}
+  .jser{margin-bottom:8px}
+  .jser:last-child{margin-bottom:0}
+  .jsh{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+  .jsh-n{font-size:.72rem;font-weight:800;color:var(--text)}
+  .jsh-c{font-size:.6rem;font-family:var(--mono);color:var(--text-dim)}
+  .jsh-t{margin-left:auto;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);cursor:pointer}
+  .jsh-t:hover{border-color:var(--violet);color:var(--violet)}
+  .jbs{display:flex;flex-wrap:wrap;gap:4px;padding-left:3px}
+  .jb{font-size:.66rem;font-weight:700;padding:3px 8px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--text-dim);cursor:pointer;user-select:none}
+  .jb.on.jm-1{border-color:rgba(255,215,0,.6);color:#e6b800;background:rgba(255,215,0,.08)}
+  .jb.on.jm-2{border-color:rgba(144,238,144,.6);color:#5cb85c;background:rgba(144,238,144,.08)}
+  .apsum{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.25);border-radius:6px;padding:10px 13px;font-size:.76rem;color:var(--violet);line-height:1.55;font-family:var(--mono)}
+  .apsum b{font-family:var(--font);font-weight:800}
+  .sft{width:100%;border-collapse:collapse;font-size:.76rem}
+  .sft th{text-align:left;font-size:.56rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);padding:6px 8px;border-bottom:1px solid var(--border2)}
+  .sft td{padding:7px 8px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.73rem}
+  .sft td.nm{font-family:var(--font);font-weight:700}
+  .sft tr:last-child td{border-bottom:none}
+  .sfck{width:15px;height:15px;border-radius:3px;border:1px solid var(--border2);cursor:pointer;display:inline-block;position:relative}
+  .sfck.on{background:var(--violet);border-color:var(--violet)}
+  .sfck.on::after{content:'\2713';position:absolute;inset:0;color:#000;font-size:.68rem;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .sfwarn{background:rgba(255,179,0,.08);border:1px solid rgba(255,179,0,.3);border-radius:6px;padding:10px 13px;font-size:.76rem;color:var(--yellow);line-height:1.55;margin-bottom:12px}
+  .sfmoved{color:var(--yellow) !important}
+  .pop.open{display:block}
+  .sr{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  .sl{font-size:.71rem;color:var(--text-mid);font-weight:600;flex:1}
+  .si{width:58px;background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:5px 7px;color:var(--text);font-family:var(--mono);font-size:.77rem;text-align:right}
+  .sh{font-size:.62rem;color:var(--text-dim);line-height:1.5}
+  .sh b{color:var(--text-mid);font-weight:700}
+  .tgl{width:36px;height:20px;border-radius:10px;background:var(--border2);border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background .2s;padding:0}
+  .tgl.on{background:var(--red)}
+  .tgl::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s}
+  .tgl.on::after{transform:translateX(16px)}
+
+  #tip{position:fixed;background:var(--surface2);border:1px solid var(--violet);border-radius:6px;padding:8px 11px;font-family:var(--mono);font-size:.68rem;pointer-events:none;z-index:200;opacity:0;transition:opacity .12s;white-space:nowrap}
+  #tip.show{opacity:1}
+  .tr{display:flex;justify-content:space-between;gap:13px}
+  .tl{color:var(--text-dim)}.tv{color:var(--accent)}
+
+  #load{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:11px;padding:70px}
+  .sp{width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--violet);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .lt{font-family:var(--mono);font-size:.77rem;color:var(--text-dim);text-align:center;line-height:1.9}
+  .lt b{color:var(--violet);font-family:var(--font)}
+  .eb{background:rgba(255,61,87,.08);border:1px solid rgba(255,61,87,.3);border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:.74rem;color:var(--red);margin:16px}
+
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div id="tip"></div>
+<div class="ov" id="ov" onclick="closeAll()"></div>
+
+<div id="dp"><div class="dp-h"><div><div class="dp-t" id="dp-t">—</div><div id="dp-k"></div></div>
+  <button class="dp-x" onclick="closeAll()">&#10005;</button></div>
+  <div class="dp-b" id="dp-b"></div></div>
+
+<div class="modal" id="add">
+  <div class="dp-h"><div class="dp-t">Add planned build</div><button class="dp-x" onclick="closeAll()">&#10005;</button></div>
+  <div class="m-b">
+    <div class="f"><label class="fl">Build name</label><input type="text" class="fi" id="a-n" placeholder="e.g. ACME BRACKET" maxlength="60" /></div>
+    <div class="f"><label class="fl">Material</label><div class="opts" id="a-m">
+      <button class="o" data-v="1" onclick="pick('a-m',this)">PA12</button>
+      <button class="o" data-v="2" onclick="pick('a-m',this)">TPU</button></div></div>
+    <div class="f"><label class="fl">Build height</label><div class="opts" id="a-h">
+      <button class="o" data-v="1" onclick="pick('a-h',this)">100%</button>
+      <button class="o" data-v="2" onclick="pick('a-h',this)">75%</button>
+      <button class="o" data-v="3" onclick="pick('a-h',this)">50%</button>
+      <button class="o" data-v="4" onclick="pick('a-h',this)">25%</button></div></div>
+    <div class="f"><label class="fl">Priority</label><div class="opts" id="a-p">
+      <button class="o" data-v="Critical" onclick="pick('a-p',this)">Critical</button>
+      <button class="o" data-v="High" onclick="pick('a-p',this)">High</button>
+      <button class="o on" data-v="Medium" onclick="pick('a-p',this)">Medium</button>
+      <button class="o" data-v="Low" onclick="pick('a-p',this)">Low</button></div></div>
+    <div class="f"><label class="fl">How many builds</label><input type="number" class="fi" id="a-q" value="1" min="1" max="100" /></div>
+    <div class="err" id="a-e" style="display:none"></div>
+    <button class="btn b-sched" onclick="addBuilds()">&#43; Add to sandbox queue</button>
+  </div>
+</div>
+
+<div class="modal" id="sf" style="width:600px;max-height:88vh">
+  <div class="dp-h"><div><div class="dp-t">Send to production board</div>
+    <div style="font-size:.7rem;color:var(--text-mid);margin-top:4px">Creates real jobs on the floor board, in these printer lanes, at these times.</div></div>
+    <button class="dp-x" onclick="closeAll()">&#10005;</button></div>
+  <div class="m-b" style="overflow-y:auto">
+    <div><div class="apsec">Send to</div>
+      <div class="segs" id="sf-dest">
+        <button class="seg on" data-v="lane" onclick="apPick('sf-dest',this);sfRender()">Printer lanes<small>scheduled, with times</small></button>
+        <button class="seg" data-v="queue" onclick="apPick('sf-dest',this);sfRender()">Production queue<small>unscheduled, operators assign</small></button>
+      </div>
+    </div>
+    <div id="sf-body"></div>
+    <div class="apsum" id="sf-sum"></div>
+    <button class="btn b-sched" id="sf-go" onclick="doSend()">&#8593; Send to production board</button>
+  </div>
+</div>
+
+<div class="modal" id="ap">
+  <div class="dp-h"><div><div class="dp-t">Auto-place planned builds</div>
+    <div style="font-size:.7rem;color:var(--text-mid);margin-top:4px">Committed floor jobs and hand-placed builds are not touched.</div></div>
+    <button class="dp-x" onclick="closeAll()">&#10005;</button></div>
+  <div class="m-b">
+
+    <div><div class="apsec">Order jobs by</div>
+      <div class="apg">
+        <div><div class="fl" style="margin-bottom:5px">First</div>
+          <div class="segs" id="ap-p1">
+            <button class="seg on" data-v="priority" onclick="apPick('ap-p1',this)">Priority</button>
+            <button class="seg" data-v="material" onclick="apPick('ap-p1',this)">Material</button>
+            <button class="seg" data-v="batch" onclick="apPick('ap-p1',this)">Batch</button>
+            <button class="seg" data-v="shortest" onclick="apPick('ap-p1',this)">Shortest</button>
+          </div></div>
+        <div><div class="fl" style="margin-bottom:5px">Then</div>
+          <div class="segs" id="ap-p2">
+            <button class="seg" data-v="priority" onclick="apPick('ap-p2',this)">Priority</button>
+            <button class="seg on" data-v="material" onclick="apPick('ap-p2',this)">Material</button>
+            <button class="seg" data-v="batch" onclick="apPick('ap-p2',this)">Batch</button>
+            <button class="seg" data-v="shortest" onclick="apPick('ap-p2',this)">Shortest</button>
+          </div></div>
+      </div>
+      <div style="margin-top:9px"><div class="fl" style="margin-bottom:5px">Material that leads</div>
+        <div class="segs" id="ap-lead">
+          <button class="seg on" data-v="1" onclick="apPick('ap-lead',this)">PA12 first</button>
+          <button class="seg" data-v="2" onclick="apPick('ap-lead',this)">TPU first</button>
+        </div></div>
+    </div>
+
+    <div><div class="apsec">Keep batches together</div>
+      <div class="segs" id="ap-keep">
+        <button class="seg" data-v="off" onclick="apPick('ap-keep',this);apKeep()">Off<small>pack for earliest finish</small></button>
+        <button class="seg on" data-v="on" onclick="apPick('ap-keep',this);apKeep()">On<small>orders ship as units</small></button>
+      </div>
+      <div id="ap-keep-how" style="margin-top:9px">
+        <div class="fl" style="margin-bottom:5px">How</div>
+        <div class="segs" id="ap-how">
+          <button class="seg" data-v="onelane" onclick="apPick('ap-how',this);apLaneDefault()">On one printer<small>batch runs back to back</small></button>
+          <button class="seg on" data-v="fleet" onclick="apPick('ap-how',this);apLaneDefault()">Across fleet<small>batch finishes as a block</small></button>
+        </div>
+      </div>
+      <div style="font-size:.66rem;color:var(--text-dim);margin-top:7px;line-height:1.5">A batch is every build sharing a base name — <b>Bracket #1…#7</b> is one batch. Either way, only the printers selected below are used.</div>
+    </div>
+
+    <div><div class="apsec" style="display:flex;align-items:center">Printers to use
+      <button class="jsh-t" style="margin-left:auto" onclick="apAllLanes(true)">All</button>
+      <button class="jsh-t" style="margin-left:5px" onclick="apAllLanes(false)">None</button></div>
+      <div class="cks" id="ap-lanes"></div>
+      <div id="ap-lane-hint" style="font-size:.66rem;color:var(--text-dim);margin-top:7px;line-height:1.5"></div>
+    </div>
+
+    <div><div class="apsec" style="display:flex;align-items:center">Jobs to place
+      <button class="jsh-t" style="margin-left:auto" onclick="apAll(true)">All</button>
+      <button class="jsh-t" style="margin-left:5px" onclick="apAll(false)">None</button></div>
+      <div class="joblist" id="ap-jobs"></div>
+    </div>
+
+    <div class="apsum" id="ap-sum"></div>
+    <button class="btn b-sched" id="ap-go" onclick="runAutoPlace()">&#9889; Place them</button>
+  </div>
+</div>
+
+<div class="pop" id="pop">
+  <div class="sr"><span class="sl">Window opens</span><input type="number" class="si" id="s-open" value="6" min="0" max="23" onchange="paintWknd();repack()" /></div>
+  <div class="sr"><span class="sl">Window closes</span><input type="number" class="si" id="s-close" value="2" min="0" max="23" onchange="paintWknd();repack()" /></div>
+  <div class="sh" style="margin-bottom:11px">No build may <em>start</em> in the blackout. Running builds carry through it.</div>
+  <div class="sr" style="margin-top:13px;padding-top:12px;border-top:1px solid var(--border)">
+    <span class="sl">Block weekends</span>
+    <button class="tgl" id="s-wknd" onclick="togWknd()"></button></div>
+  <div class="sh" id="s-wknd-h" style="margin-bottom:13px"></div>
+  <div class="sr" style="padding-top:12px;border-top:1px solid var(--border)"><span class="sl">Material affinity (h)</span><input type="number" class="si" id="s-aff" value="2" min="0" max="12" step="0.5" /></div>
+  <div class="sh">Used by auto-place only. A lane keeping its material wins ties worth this much earlier start.</div>
+</div>
+
+<div id="cfg">
+  <label>API Token</label>
+  <input type="password" id="tok" placeholder="Same Monday.com token as the floor app" />
+  <button class="cfg-btn" onclick="saveAndLoad()">Save &amp; Load</button>
+</div>
+
+<header>
+  <div class="logo"></div>
+  <h1>MJF <span>Production</span> Planner</h1>
+  <span class="tag">Sandbox</span>
+  <div class="metrics" id="metrics"></div>
+  <div class="hdr-sep"></div>
+  <div class="acts-hdr">
+    <div class="view-toggle">
+      <button class="vbtn" id="v-day" onclick="setView('day')">Day</button>
+      <button class="vbtn active" id="v-week" onclick="setView('week')">Week</button>
+      <button class="vbtn" id="v-month" onclick="setView('month')">4 Wk</button>
+    </div>
+    <button class="nbtn" onclick="nav(-1)">&#8592;</button>
+    <div class="date-badge" id="badge">—</div>
+    <button class="nbtn" onclick="nav(1)">&#8594;</button>
+    <button class="nbtn" onclick="today()">Today</button>
+    <div class="conn-dot" id="dot"></div>
+    <div class="upd soft" id="upd">Not loaded</div>
+    <button class="nbtn" onclick="loadAll()">&#8635;</button>
+    <button class="nbtn" onclick="togPop(event)">&#9881;</button>
+    <button class="primary-btn" onclick="openAutoPlace()">&#9889; Auto-place</button>
+    <button class="primary-btn btn-send" id="b-send" disabled onclick="openSend()">&#8593; Send to floor</button>
+    <button class="primary-btn btn-dim" id="b-clearsel" disabled onclick="clearSelected()">Clear selected</button>
+    <button class="primary-btn btn-dim" onclick="clearPlan()">Clear all</button>
+  </div>
+</header>
+
+<div id="audit"></div>
+<div id="ghosts"></div>
+<div id="gantt-wrap">
+  <div id="gantt-scroll"><div id="gantt">
+    <div id="load"><div class="sp"></div>
+      <div class="lt"><b>Load your token to begin.</b><br>
+      Live builds appear locked. The floor queue stays parked until you place it.</div></div>
+  </div></div>
+  <div id="strips" style="display:none">
+    <div class="strip">
+      <div class="s-head">
+        <span class="s-title com">&#9679; Floor queue — committed</span>
+        <span class="s-count" id="c-count">0</span>
+        <span class="s-note" id="c-note"></span>
+        <button class="s-btn s-btn-com" id="c-btn" onclick="placeCommitted()">Place committed queue</button>
+      </div>
+      <div id="c-chips"></div>
+    </div>
+    <div class="strip">
+      <div class="s-head">
+        <span class="s-title plan">&#9679; Sandbox queue — planned</span>
+        <span class="s-note">Click a build on the chart to select · double-click for options</span>
+        <span class="s-count" id="p-count">0</span>
+        <button class="s-btn s-btn-plan" style="margin-left:auto" onclick="openAdd()">&#43; Add build</button>
+        <button class="s-btn" id="q-clear" style="margin-left:6px;background:rgba(255,61,87,.1);border:1px solid rgba(255,61,87,.4);color:var(--red)" onclick="clearQueue()">Clear queue</button>
+      </div>
+      <div id="p-chips"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG — floor board (read-only) + sandbox board (read/write)
+// The duration table is duplicated from the floor app. It should live in ONE
+// module shared by the floor app, the Lambda, and this. Drift here = a wrong
+// forecast with no error message.
+// ═══════════════════════════════════════════════════════════════════════════
+const API='https://api.monday.com/v2';
+
+const FLOOR_BOARD='18415279609', MGMT_BOARD='18416066539';
+const FLOOR_QUEUE_GROUP='group_mm3sgb77';
+const FLOOR_DONE_GROUP='group_mm3svypw';   // Print Completed
+const LANES={
+  'group_mm3smkj2':{name:'MJF Printer #1', sandbox:'group_title',      dd:1},
+  'group_mm3sehz6':{name:'MJF Printer #2', sandbox:'group_mm5631qq',   dd:2},
+  'group_mm3sdqtr':{name:'MJF Printer #3', sandbox:'group_mm56t725',   dd:3},
+  'group_mm3scjck':{name:'MJF Printer #4', sandbox:'group_mm56swa',    dd:4},
+  'group_mm3std0b':{name:'MJF Printer #5', sandbox:'group_mm56svtc',   dd:5},
+};
+// Write columns on the floor board. Push mirrors submitAddJob('delay') exactly:
+// pre-set date + time, set the Printer dropdown, mark Scheduled. The Lambda
+// respects a pre-set start and only cascades on overlap — a build placed in the
+// future past everything on its lane has nothing to overlap.
+const FW={PRINTER:'dropdown_mm3s4ct0', PRINT_STATUS:'dropdown_mm54959y'};
+const FLOOR_SCHEDULED=1;
+const FLOOR_PRIO_INDEX={Critical:2, High:0, Medium:7, Low:6};
+const SANDBOX_TO_FLOOR = Object.fromEntries(Object.entries(LANES).map(([f,v])=>[v.sandbox,f]));
+
+// Mirrors the Lambda's isPrinterReady(): Production Ready (1) and nothing else.
+// Maintenance Required (2) is NOT usable — the Lambda bounces new jobs on a
+// non-ready printer into the Queue before it ever schedules them.
+const READY = g => (statuses[g] ?? 1) === 1;
+
+// "new:12345"   → we created that floor job. Recall deletes it.
+// "queue:12345" → it came from the floor queue. Recall moves it back, never deletes.
+// A bare number is legacy and means "new" — that's all the old push ever wrote.
+function parseRef(t){
+  const v=(t||'').trim(); if(!v) return null;
+  const m=v.match(/^(new|queue):(\d+)$/);
+  if(m) return {fid:m[2], origin:m[1]};
+  if(/^\d+$/.test(v)) return {fid:v, origin:'new'};
+  return null;
+}
+const makeRef = (origin,fid) => `${origin}:${fid}`;
+const FLOOR_QUEUE_DD = 6;   // "Queue" in the floor board's Printer dropdown
+const STATUS_ITEMS={'12177667108':'group_mm3smkj2','12177684374':'group_mm3sehz6','12177684510':'group_mm3sdqtr','12177667806':'group_mm3scjck','12177658207':'group_mm3std0b'};
+const FC={PRINT_DATE:'date_mm3tthmm',START_TIME:'hour_mm3s33h0',END_DATE:'date_mm3y3yeb',END_TIME:'hour_mm3swp76',
+          MATERIAL:'dropdown_mm3snn2g',HEIGHT:'dropdown_mm3ssx4m',PRIORITY:'color_mm3s6bae',
+          DURATION:'formula_mm3ymd5b', STATUS:'dropdown_mm54959y'};
+const FLOOR_RUNNING=2, FLOOR_DONE=3;
+const DEFAULT_DURATION=12;   // same last-resort the Lambda and floor app use
+// Floor board's status indices, from its PRIORITY_CONFIG. We translate by LABEL,
+// not index, so the sandbox board's own indices can be whatever Monday assigned.
+const FLOOR_PRIO={2:'Critical',0:'High',7:'Medium',6:'Low'};
+
+const SB_BOARD='18421627704';
+const SB_QUEUE='topics';
+const SC={
+  MATERIAL:'dropdown_mm56pn83', HEIGHT:'dropdown_mm56h51r',
+  SEQ:'numeric_mm566jvy', PINNED:'date_mm568s90',
+  SIM_START:'date_mm56g474', SIM_END:'date_mm56d2xx',
+  DURATION:'numeric_mm569zj3', SCENARIO:'color_mm56yccs',
+  PUSHED:'boolean_mm56d45d', FLOOR_ID:'text_mm56pydr',
+};
+const SCENARIO_BASELINE=1;  // your board: 0=Scenario A, 1=Baseline, 2=Scenario B
+
+// Dropdown IDs verified identical on both boards — no translation needed.
+const DUR={1:{1:12,2:14},2:{1:9,2:10.5},3:{1:6,2:7},4:{1:3,2:3.5}};
+const HL={1:'100%',2:'75%',3:'50%',4:'25%'};
+const ML={1:'PA12',2:'TPU'};
+const HOUR=36e5, DAY=864e5;
+
+// Priority. Rank drives sequencing; the colours mirror the floor app so the two
+// boards speak the same visual language.
+const PRANK={Critical:0,High:1,Medium:2,Low:3};
+const PCOL={Critical:'#df2f4a',High:'#fdab3d',Medium:'#579bfc',Low:'#037f4c'};
+const PORDER=['Critical','High','Medium','Low'];
+// Discovered at load from the board's own settings_str — never hardcoded.
+let PRIO_COL=null;              // column id, or null if the column doesn't exist
+let PRIO_INDEX={};              // 'Critical' -> 2   (label -> Monday index)
+let PRIO_NAME={};               // 2 -> 'Critical'   (Monday index -> label)
+
+// Unset priority sorts LAST, not first — an unlabelled build is not urgent.
+const rank = p => PRANK[p] ?? 99;
+// Priority as a Monday column value, using this board's real label indices.
+const pcv  = p => (PRIO_COL && p && PRIO_INDEX[p]!=null) ? {[PRIO_COL]:{index:PRIO_INDEX[p]}} : {};
+
+let tok=localStorage.getItem('mjf_tok')||'';
+let view='week', ref=monday(new Date());
+let statuses={}, live={}, floorQ=[], items=[], packed={};
+let ready=false, detail=null;
+// Selection lives on the Gantt. Only planned, unsent builds can be selected —
+// LIVE is locked, SENT already went, and COMMITTED jobs already exist on the
+// floor, so sending them would duplicate real work.
+let sel=new Set();
+// Selectable = placed on a lane in the sandbox, and not already scheduled on the
+// floor. Committed jobs qualify: sending one MOVES the existing floor item out of
+// the queue into the lane. It never creates a duplicate.
+const selectable = it => !!it.lane && !it.pushed && !it.done && !it.orphan;
+
+function togSel(e,id){
+  if(e.detail>1) return;                    // second click of a double-click
+  sel.has(id) ? sel.delete(id) : sel.add(id);
+  render();
+}
+function onDbl(e,id){
+  // The first click of the double already toggled — put it back, then open.
+  sel.has(id) ? sel.delete(id) : sel.add(id);
+  open_(id);
+}
+function clearSel(){ sel.clear(); }
+function selItems(){ return items.filter(i=>sel.has(i.id) && selectable(i)); }
+
+function paintSelBtns(){
+  const n=selItems().length;
+  const send=document.getElementById('b-send');
+  const cs=document.getElementById('b-clearsel');
+  send.disabled=!n; send.classList.toggle('armed',!!n);
+  send.innerHTML = n ? `&#8593; Send ${n} to floor` : '&#8593; Send to floor';
+  cs.disabled=!n; cs.classList.toggle('armed',!!n);
+  cs.textContent = n ? `Clear selected (${n})` : 'Clear selected';
+}
+
+// Unplace just the selected builds — back to the queue, nothing deleted.
+async function clearSelected(){
+  const list=selItems();
+  if(!list.length) return;
+  if(!confirm(`Send ${list.length} selected build${list.length>1?'s':''} back to the sandbox queue?\n\nNothing is deleted — they return to the queue unplaced.`)) return;
+  const ids=list.map(i=>i.id);
+  for(const it of list){ it.lane=null; it.pinned=null; it.seq=0; }
+  clearSel(); repack();
+  setConn('sync',`Clearing ${ids.length}...`);
+  try{
+    for(const id of ids){
+      await moveItem(id,null);
+      await gql(`mutation{change_multiple_column_values(board_id:${SB_BOARD}, item_id:${id},
+        column_values:${CV({[SC.PINNED]:{},[SC.SIM_START]:{},[SC.SIM_END]:{},[SC.SEQ]:'0'})}){id}}`);
+    }
+    setConn('ok',`${ids.length} returned to queue`);
+  }catch(e){ setConn('err','Clear failed — '+e.message); }
+}
+
+// ── Monday date+time columns are stored in UTC. The floor board dodges this by
+// splitting date and hour; ours doesn't. Convert both ways or the board shows
+// every build shifted by your timezone offset.
+const toM = d => { const s=d.toISOString(); return {date:s.slice(0,10), time:s.slice(11,19)}; };
+const fromM = v => { if(!v||!v.date) return null;
+  return v.time ? new Date(`${v.date}T${v.time}Z`) : new Date(`${v.date}T00:00:00`); };
+
+document.addEventListener('DOMContentLoaded',()=>{
+  paintWknd();
+  badge();
+  if(tok){document.getElementById('tok').value=tok; loadAll();}
+});
+function saveAndLoad(){tok=document.getElementById('tok').value.trim();localStorage.setItem('mjf_tok',tok);loadAll();}
+function togPop(e){const p=document.getElementById('pop');const r=e.currentTarget.getBoundingClientRect();
+  p.style.top=(r.bottom+6)+'px';p.style.right='18px';p.classList.toggle('open');}
+document.addEventListener('click',e=>{const p=document.getElementById('pop');
+  if(p.classList.contains('open')&&!p.contains(e.target)&&!e.target.closest('[onclick*="togPop"]'))p.classList.remove('open');});
+
+async function gql(q){
+  const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':tok,'API-Version':'2024-01'},body:JSON.stringify({query:q})});
+  const d=await r.json(); if(d.errors) throw new Error(d.errors[0].message); return d.data;
+}
+const S = s => JSON.stringify(s);
+const CV = o => JSON.stringify(JSON.stringify(o));
+
+// ═══ LOAD ══════════════════════════════════════════════════════════════════
+async function loadAll(){
+  if(!tok) return;
+  setConn('sync','Loading...');
+  try{
+    const laneIds=Object.keys(LANES);
+    durAudit=[];
+    const d=await gql(`query{
+      floor:boards(ids:[${FLOOR_BOARD}]){groups(ids:${S([...laneIds,FLOOR_QUEUE_GROUP])}){id items_page(limit:200){items{id name
+        column_values(ids:${S(Object.values(FC))}){id value text}}}}}
+      mgmt:boards(ids:[${MGMT_BOARD}]){items_page{items{id column_values(ids:["dropdown_mm3z8jja"]){id value}}}}
+      sb:boards(ids:[${SB_BOARD}]){
+        columns{id title type settings_str}
+        groups{id items_page(limit:300){items{id name group{id}
+          column_values{id value text}}}}}
+    }`);
+
+    // ── Discover the Priority column by title, and read its label indices from
+    // the board itself. Monday assigns status indices unpredictably; matching on
+    // the label text means a reshuffle can't silently invert your priorities.
+    PRIO_COL=null; PRIO_INDEX={}; PRIO_NAME={};
+    const pc_=(d?.sb?.[0]?.columns||[]).find(c=>c.type==='status'&&/^priority$/i.test(c.title));
+    if(pc_){
+      PRIO_COL=pc_.id;
+      try{
+        const labels=JSON.parse(pc_.settings_str||'{}').labels||{};
+        for(const [idx,name] of Object.entries(labels)){
+          const clean=String(name).trim();
+          if(!clean) continue;
+          PRIO_INDEX[clean]=Number(idx);
+          PRIO_NAME[Number(idx)]=clean;
+        }
+      }catch{}
+    }
+
+    statuses={};
+    for(const it of d?.mgmt?.[0]?.items_page?.items||[]){
+      const g=STATUS_ITEMS[it.id]; if(!g) continue;
+      try{statuses[g]=JSON.parse(it.column_values[0]?.value||'{}')?.ids?.[0]??1;}catch{statuses[g]=1;}
+    }
+
+    live={}; floorQ=[];
+    for(const g of d?.floor?.[0]?.groups||[]){
+      if(g.id===FLOOR_QUEUE_GROUP) floorQ=g.items_page.items.map(floorJob);
+      else live[g.id]=g.items_page.items.map(floorJob).filter(j=>j.start);   // end is always derivable
+    }
+
+    items=[];
+    for(const g of d?.sb?.[0]?.groups||[]) for(const it of g.items_page.items) items.push(sbItem(it,g.id));
+    await classify();
+
+    ready=true;
+    sel=new Set([...sel].filter(id=>items.some(i=>i.id===id && selectable(i))));
+    paintAudit(); paintGhosts();
+    setConn('ok','Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
+    document.getElementById('cfg').classList.add('collapsed');
+    repack();
+  }catch(e){
+    setConn('err','Failed');
+    document.getElementById('gantt').innerHTML=`<div class="eb">&#9888; ${esc(e.message)}</div>`;
+  }
+}
+// The floor board's DURATION formula is authoritative — it's what the Lambda
+// reads. If it ever stops matching DURATION_TABLE, every planned end time and
+// every pushed job is wrong by the difference, silently.
+function paintAudit(){
+  const bar=document.getElementById('audit');
+  if(!durAudit.length){ bar.style.display='none'; return; }
+  const u=[...new Map(durAudit.map(a=>[`${a.hgt}-${a.mat}`,a])).values()];
+  bar.style.display='block';
+  bar.innerHTML=`&#9888; <b>Duration mismatch.</b> The floor board's formula column disagrees with this app's duration table on `+
+    u.map(a=>`<b>${HL[a.hgt]} ${ML[a.mat]}</b>: floor says ${a.formula}h, planner says ${a.table}h`).join('; ')+
+    `. The Lambda uses the formula, so pushed end times will not match the plan. Fix the formula or the table — they must agree.`;
+}
+// A plan item can outlive its floor job — the build completed, or somebody
+// deleted it. Either way the plan is holding a ghost. Say so and offer a way out
+// rather than leaving a permanent SENT badge on something that no longer exists.
+function paintGhosts(){
+  const bar=document.getElementById('ghosts');
+  const done=items.filter(i=>i.done), gone=items.filter(i=>i.orphan);
+  if(!done.length && !gone.length){ bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+  const bits=[];
+  if(done.length) bits.push(`<b>${done.length}</b> completed on the floor`);
+  if(gone.length) bits.push(`<b>${gone.length}</b> deleted from the floor board`);
+  bar.innerHTML=`&#9888; ${bits.join(' · ')} — still in the plan.
+    <button class="gbtn" onclick="clearGhosts()">Remove from plan</button>
+    ${gone.length?`<button class="gbtn rep" onclick="replanGhosts()">Re-plan the ${gone.length} deleted</button>`:''}`;
+}
+
+// Drop the plan rows whose floor jobs are finished or gone.
+async function clearGhosts(){
+  const g=items.filter(i=>i.done||i.orphan);
+  if(!g.length) return;
+  if(!confirm(`Remove ${g.length} build${g.length>1?'s':''} from the plan?\n\nThese either ran to completion or were deleted on the floor board. Nothing on the floor is touched.`)) return;
+  await deleteMany(g.map(i=>i.id),'Plan cleaned up');
+}
+
+// The floor job is gone but you may still WANT the build — unlink it and it
+// becomes an ordinary planned build again, back in the sandbox queue.
+async function replanGhosts(){
+  const g=items.filter(i=>i.orphan);
+  if(!g.length) return;
+  if(!confirm(`Return ${g.length} build${g.length>1?'s':''} to the sandbox queue as planned work?\n\nTheir floor jobs were deleted. This unlinks them so you can place and send them again.`)) return;
+  setConn('sync',`Re-planning ${g.length}...`);
+  try{
+    for(const it of g){
+      await gql(`mutation{change_multiple_column_values(board_id:${SB_BOARD}, item_id:${it.id},
+        column_values:${CV({[SC.PUSHED]:{checked:'false'},[SC.FLOOR_ID]:'',
+                            [SC.SIM_START]:{},[SC.SIM_END]:{},[SC.PINNED]:{},[SC.SEQ]:'0'})}){id}}`);
+      await moveItem(it.id,null);
+    }
+    setConn('ok',`${g.length} back in the queue`);
+  }catch(e){ setConn('err','Re-plan failed — '+e.message); }
+  await loadAll();
+}
+function setConn(s,t){document.getElementById('dot').className='conn-dot conn-'+s;document.getElementById('upd').textContent=t;}
+
+// Duration chain — MUST match the Lambda's parseItemSchedule() and the floor
+// app's parseJob() exactly, in this order:
+//   1. the DURATION formula column   (authoritative — it's what the Lambda uses)
+//   2. DURATION_TABLE[height][material]
+//   3. 12h default
+// The planner used to skip step 1 and have no step 3, which meant a live job with
+// no computable end was DROPPED from the fleet model — so the packer thought the
+// lane was free and planned straight on top of real running work.
+let durAudit=[];
+function floorJob(it){
+  const g=id=>it.column_values?.find(c=>c.id===id);
+  const pd=g(FC.PRINT_DATE)?.text||null, ed=g(FC.END_DATE)?.text||null;
+  let sh=null,sm=0,eh=null,em=0;
+  try{const p=JSON.parse(g(FC.START_TIME)?.value||'null');if(p){sh=p.hour??0;sm=p.minute??0;}}catch{}
+  try{const p=JSON.parse(g(FC.END_TIME)?.value||'null');if(p){eh=p.hour??0;em=p.minute??0;}}catch{}
+  let mat=null,hgt=null,prio=null;
+  try{const v=JSON.parse(g(FC.MATERIAL)?.value||'null');if(v)mat=v?.ids?.[0]??null;}catch{}
+  try{const v=JSON.parse(g(FC.HEIGHT)?.value||'null');if(v)hgt=v?.ids?.[0]??null;}catch{}
+  try{const v=JSON.parse(g(FC.PRIORITY)?.value||'null');if(v!=null&&v.index!=null)prio=FLOOR_PRIO[v.index]||null;}catch{}
+  let status=null;
+  try{const v=JSON.parse(g(FC.STATUS)?.value||'null');if(v)status=v?.ids?.[0]??null;}catch{}
+
+  let dur=null;
+  const raw=g(FC.DURATION)?.text;
+  if(raw && !isNaN(parseFloat(raw))) dur=parseFloat(raw);
+  const tableDur=(hgt&&mat)?DUR[hgt]?.[mat]??null:null;
+
+  // AUDIT: the formula column is what the Lambda actually uses. If it disagrees
+  // with our table, every forecast and every pushed end time is quietly wrong.
+  // Surface it rather than let it rot.
+  if(dur!=null && tableDur!=null && Math.abs(dur-tableDur)>0.01)
+    durAudit.push({name:it.name, formula:dur, table:tableDur, mat, hgt});
+
+  if(dur==null) dur=tableDur;
+  if(dur==null) dur=DEFAULT_DURATION;
+
+  let s=null,e=null;
+  if(pd&&sh!==null){const t=new Date(`${pd}T${p2(sh)}:${p2(sm)}:00`);if(!isNaN(t))s=t;}
+  if(ed&&eh!==null){const t=new Date(`${ed}T${p2(eh)}:${p2(em)}:00`);if(!isNaN(t))e=t;}
+  if(!e&&s)e=new Date(s.getTime()+dur*HOUR);   // always computable now
+  return {id:it.id,name:it.name,start:s,end:e,mat,hgt,dur,prio,status};
+}
+
+function sbItem(it,gid){
+  const g=id=>it.column_values?.find(c=>c.id===id);
+  const jp=id=>{try{return JSON.parse(g(id)?.value||'null');}catch{return null;}};
+  const mat=jp(SC.MATERIAL)?.ids?.[0]??1;
+  const hgt=jp(SC.HEIGHT)?.ids?.[0]??1;
+  const ref=parseRef(g(SC.FLOOR_ID)?.text);
+  let prio=null;
+  if(PRIO_COL){ const v=jp(PRIO_COL); if(v!=null&&v.index!=null) prio=PRIO_NAME[v.index]||null; }
+  return {
+    id:it.id, name:it.name,
+    lane: SANDBOX_TO_FLOOR[gid]||null,     // null == sandbox queue
+    mat, hgt, prio,
+    seq: parseFloat(g(SC.SEQ)?.text)||0,
+    pinned: fromM(jp(SC.PINNED)),
+    floorId: ref?ref.fid:null,
+    origin:  ref?ref.origin:null,
+    // committed / pushed are DERIVED from where the floor job actually sits.
+    // See classify() — the floor board is the truth, not a stale checkbox.
+    committed:false, pushed:false, onLane:false,
+  };
+}
+
+// FLOOR STATE — asked, not inferred.
+//   lane  → scheduled on a printer. The LIVE mirror draws it.
+//   queue → sitting in the floor queue, unscheduled.
+//   done  → moved to Print Completed. The build ran.
+//   gone  → deleted or archived on the floor. The plan is holding a ghost.
+async function classify(){
+  const linked=[...new Set(items.filter(i=>i.floorId).map(i=>i.floorId))];
+  const loc={};
+  if(linked.length){
+    // Chunked — a long-lived plan can link a lot of floor items.
+    for(let i=0;i<linked.length;i+=100){
+      const chunk=linked.slice(i,i+100);
+      const d=await gql(`query{items(ids:[${chunk.join(',')}]){id state group{id}}}`);
+      for(const it of d?.items||[]){
+        if(it.state && it.state!=='active'){ loc[it.id]='gone'; continue; }
+        const g=it.group?.id;
+        loc[it.id] = LANES[g] ? 'lane'
+                   : g===FLOOR_QUEUE_GROUP ? 'queue'
+                   : g===FLOOR_DONE_GROUP  ? 'done'
+                   : 'lane';
+      }
+    }
+  }
+  for(const it of items){
+    if(!it.floorId){ it.loc=null; it.committed=false; it.pushed=false; it.onLane=false; it.done=false; it.orphan=false; continue; }
+    it.loc       = loc[it.floorId] || 'gone';   // absent from the query == deleted
+    it.onLane    = it.loc==='lane';
+    it.pushed    = it.loc==='lane';
+    it.committed = it.loc==='queue';
+    it.done      = it.loc==='done';
+    it.orphan    = it.loc==='gone';
+  }
+}
+
+// ═══ PACK ══════════════════════════════════════════════════════════════════
+// Lanes hold a sequence, not timestamps. Times are derived by packing each lane
+// after its live builds. Delay cascades for free — repack and downstream slides.
+let WKND=localStorage.getItem('mjf_wknd')==='1';
+const wOpen  = () => +document.getElementById('s-open').value||6;
+const wClose = () => +document.getElementById('s-close').value||2;
+
+function togWknd(){
+  WKND=!WKND;
+  localStorage.setItem('mjf_wknd', WKND?'1':'0');
+  paintWknd();
+  if(ready) repack();
+}
+function paintWknd(){
+  const b=document.getElementById('s-wknd');
+  b.classList.toggle('on',WKND);
+  document.getElementById('s-wknd-h').innerHTML = WKND
+    ? `No starts from <b>Sat ${fmtHr(wClose())}</b> until <b>Mon ${fmtHr(wOpen())}</b>. A build already running prints straight through the weekend.`
+    : `Weekend starts allowed. Toggle on to stop the planner scheduling a build that nobody is here to load.`;
+}
+const fmtHr = h => `${h%12||12}:00 ${h>=12?'PM':'AM'}`;
+
+// The nightly blackout. Starts only — a running build carries through it.
+function dailyAdjust(d){
+  const o=wOpen(), c=wClose();
+  const h=d.getHours()+d.getMinutes()/60;
+  const blocked=(c<o)?(h>=c&&h<o):(h<o||h>=c);
+  if(!blocked) return d;
+  const r=new Date(d); r.setHours(o,0,0,0);
+  if(r<d) r.setTime(r.getTime()+DAY);
+  return r;
+}
+// The weekend block starts exactly where Friday's shift ends and lifts exactly
+// where Monday's begins — so Sat 00:00-02:00 is still Friday's window and stays
+// open. Derived from the window settings, not hardcoded to 2AM/6AM.
+function wkndBlocked(d){
+  if(!WKND) return false;
+  const day=d.getDay(), h=d.getHours()+d.getMinutes()/60;
+  if(day===6) return h>=wClose();   // Saturday, from window close
+  if(day===0) return true;          // all of Sunday
+  if(day===1) return h<wOpen();     // Monday, before window open
+  return false;
+}
+function mondayOpen(d){
+  const r=new Date(d); r.setHours(wOpen(),0,0,0);
+  while(r.getDay()!==1 || r<d){ r.setDate(r.getDate()+1); r.setHours(wOpen(),0,0,0); }
+  return r;
+}
+function winOpen(dt){
+  const d=dailyAdjust(new Date(dt));
+  return wkndBlocked(d) ? dailyAdjust(mondayOpen(d)) : d;
+}
+// True if a build could NOT be started at this instant — drives the shading.
+function startBlocked(d){
+  const o=wOpen(), c=wClose(), h=d.getHours()+d.getMinutes()/60;
+  const daily=(c<o)?(h>=c&&h<o):(h<o||h>=c);
+  return daily || wkndBlocked(d);
+}
+// Floored to the minute. Monday stores hour+minute, so every real timestamp in
+// the system has zero seconds — the only sub-minute noise was our own clock, and
+// it was making the send check report phantom "the shop moved" shifts.
+function nowFloor(){ const d=new Date(); d.setSeconds(0,0); return d; }
+function laneFree(g){let t=nowFloor();for(const j of live[g]||[]) if(j.end>t) t=j.end; return t;}
+
+// A fingerprint of everything the SHOP controls. Unchanged across a re-read means
+// nothing on the floor moved, so any difference is our own recomputation and must
+// not be blamed on an operator who isn't even at work.
+function floorPrint(){
+  const jobs=Object.entries(live).flatMap(([g,js])=>
+    js.map(j=>`${g}:${j.id}:${+j.start}:${+j.end}`)).sort();
+  const st=Object.entries(statuses).map(([g,v])=>`${g}=${v}`).sort();
+  const q=floorQ.map(j=>j.id).sort();
+  return JSON.stringify([jobs,st,q]);
+}
+
+// A pushed item whose floor job we can already see in a live lane. Its block is
+// now drawn by the LIVE mirror, so the planner must not draw it again.
+// Its floor job is already drawn by the LIVE mirror — don't draw it twice.
+const isLiveNow = it => !!it.onLane;
+function repack(){
+  packed={};
+  for(const g of Object.keys(LANES)){
+    let cur=laneFree(g);
+    packed[g]=items.filter(i=>i.lane===g && !isLiveNow(i) && !i.done && !i.orphan).sort((a,b)=>a.seq-b.seq).map(i=>{
+      const dur=DUR[i.hgt][i.mat];
+      const raw=i.pinned?new Date(Math.max(i.pinned.getTime(),cur.getTime())):new Date(cur);
+      const start=winOpen(raw), end=new Date(start.getTime()+dur*HOUR);
+      cur=end;
+      return {...i,dur,start,end};
+    });
+  }
+  render();
+  syncBoard();
+}
+
+// ═══ WRITE BACK ════════════════════════════════════════════════════════════
+// Sim Start / Sim End / Duration / Sequence are app-written so the Monday board
+// shows the same plan to someone who never opens this app. That's the point.
+let syncing=false, syncQueued=false;
+async function syncBoard(){
+  if(!ready||!tok) return;
+  if(syncing){syncQueued=true;return;}
+  syncing=true;
+  const all=Object.values(packed).flat();
+  const dirty=all.filter(p=>{
+    const k=`${p.lane}|${p.seq}|${p.start?.getTime()}|${p.end?.getTime()}|${p.dur}`;
+    if(p._k===k) return false; p._k=k; return true;
+  });
+  if(!dirty.length){syncing=false;if(syncQueued){syncQueued=false;syncBoard();}return;}
+  setConn('sync','Writing '+dirty.length+'...');
+  try{
+    for(const p of dirty){
+      const src=items.find(i=>i.id===p.id); if(src) src._k=p._k;
+      await gql(`mutation{change_multiple_column_values(board_id:${SB_BOARD}, item_id:${p.id},
+        column_values:${CV({[SC.SEQ]:String(p.seq),[SC.SIM_START]:toM(p.start),[SC.SIM_END]:toM(p.end),[SC.DURATION]:String(p.dur)})}){id}}`);
+    }
+    setConn('ok','Board updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){ setConn('err','Write failed — '+e.message); }
+  syncing=false;
+  if(syncQueued){syncQueued=false;syncBoard();}
+}
+async function moveItem(id,laneGid){
+  const g = laneGid ? LANES[laneGid].sandbox : SB_QUEUE;
+  await gql(`mutation{move_item_to_group(item_id:${id}, group_id:${S(g)}){id}}`);
+}
+
+// ═══ ACTIONS ═══════════════════════════════════════════════════════════════
+function nextSeq(g){const r=items.filter(i=>i.lane===g);return r.length?Math.max(...r.map(i=>i.seq))+1:0;}
+
+async function place(id,lane,mode,pin){
+  const it=items.find(x=>x.id===id); if(!it) return;
+  const prevLane=it.lane;
+  it.lane=lane; it.pinned=null;
+  if(mode==='next'){items.filter(x=>x.lane===lane&&x.id!==id).forEach(x=>x.seq+=1); it.seq=0;}
+  else if(mode==='delay'){it.pinned=pin; it.seq=nextSeq(lane);}
+  else it.seq=nextSeq(lane);
+  closeAll(); repack();
+  try{
+    if(prevLane!==lane) await moveItem(id,lane);
+    await gql(`mutation{change_multiple_column_values(board_id:${SB_BOARD}, item_id:${id},
+      column_values:${CV({[SC.PINNED]: it.pinned?toM(it.pinned):{}})}){id}}`);
+  }catch(e){setConn('err','Write failed — '+e.message);}
+}
+async function unplace(id){
+  const it=items.find(x=>x.id===id); if(!it) return;
+  it.lane=null; it.pinned=null; it.seq=0;
+  closeAll(); repack();
+  try{
+    await moveItem(id,null);
+    await gql(`mutation{change_multiple_column_values(board_id:${SB_BOARD}, item_id:${id},
+      column_values:${CV({[SC.PINNED]:{},[SC.SIM_START]:{},[SC.SIM_END]:{}})}){id}}`);
+  }catch(e){setConn('err','Write failed — '+e.message);}
+}
+async function removeItem(id){
+  items=items.filter(i=>i.id!==id);
+  closeAll(); repack();
+  try{ await gql(`mutation{delete_item(item_id:${id}){id}}`); }
+  catch(e){ setConn('err','Delete failed — '+e.message); }
+}
+
+// ── Bulk delete. GraphQL aliases let us delete up to 10 per request, which keeps
+// a 50-build wipe from tripping Monday's rate limit.
+async function deleteMany(ids,label){
+  setConn('sync',`Deleting ${ids.length}...`);
+  const done=[];
+  try{
+    for(let i=0;i<ids.length;i+=10){
+      const chunk=ids.slice(i,i+10);
+      await gql(`mutation{${chunk.map((id,n)=>`d${n}: delete_item(item_id:${id}){id}`).join(' ')}}`);
+      done.push(...chunk);
+      setConn('sync',`Deleted ${done.length}/${ids.length}...`);
+    }
+    setConn('ok',`${label} — ${done.length} deleted`);
+  }catch(e){
+    // Whatever actually landed is gone; re-read rather than guess at local state.
+    setConn('err','Delete failed — '+e.message);
+    await loadAll();
+    return;
+  }
+  const gone=new Set(done);
+  items=items.filter(i=>!gone.has(i.id));
+  repack();
+}
+
+// Clear queue = the unplaced PLANNED builds only. Committed mirrors are real
+// floor work and don't get swept up in a bulk wipe. To wipe everything, use the
+// header Clear (sends all placed builds back to the queue) and then this.
+async function clearQueue(){
+  const ids=items.filter(i=>!i.lane && !i.committed && !i.pushed).map(i=>i.id);
+  if(!ids.length){alert('The sandbox queue is already empty.');return;}
+  if(!confirm(`Delete ${ids.length} planned build${ids.length>1?'s':''} from the sandbox queue?\n\nBuilds already placed on printers are untouched. Committed floor jobs are untouched.`)) return;
+  await deleteMany(ids,'Queue cleared');
+}
+async function clearPlan(){
+  if(!confirm('Send every placed build back to its queue? Committed jobs stay mirrored — they just come off the printers.')) return;
+  const placedIds=items.filter(i=>i.lane && !i.pushed).map(i=>i.id);
+  items.forEach(i=>{ if(i.pushed) return; i.lane=null; i.pinned=null; i.seq=0; });
+  clearSel();
+  repack();
+  setConn('sync','Clearing...');
+  try{
+    for(const id of placedIds){
+      await moveItem(id,null);
+      await gql(`mutation{change_multiple_column_values(board_id:${SB_BOARD}, item_id:${id},
+        column_values:${CV({[SC.PINNED]:{},[SC.SIM_START]:{},[SC.SIM_END]:{},[SC.SEQ]:'0'})}){id}}`);
+    }
+    setConn('ok','Cleared');
+  }catch(e){setConn('err','Clear failed — '+e.message);}
+}
+
+// ── Place the floor queue. Explicit, never automatic. Mirrors each committed
+// job as a sandbox item carrying its Floor Item ID, then greedy-packs them.
+async function placeCommitted(){
+  if(!ready) return;
+  const have=new Set(items.filter(i=>i.floorId).map(i=>i.floorId));
+  const todo=floorQ.filter(j=>!have.has(j.id) && j.mat && j.hgt);
+  if(!todo.length){alert('Every committed job is already in the plan.');return;}
+  if(!confirm(`Mirror ${todo.length} committed job${todo.length>1?'s':''} into the sandbox and place them on printers?\n\nThey stay in the floor queue — nothing on the floor changes.`)) return;
+
+  const btn=document.getElementById('c-btn'); btn.disabled=true;
+  setConn('sync',`Mirroring ${todo.length}...`);
+  try{
+    for(const j of todo){
+      const r=await gql(`mutation{create_item(board_id:${SB_BOARD}, group_id:${S(SB_QUEUE)}, item_name:${S(j.name)},
+        column_values:${CV({[SC.MATERIAL]:{ids:[j.mat]},[SC.HEIGHT]:{ids:[j.hgt]},
+          [SC.FLOOR_ID]:makeRef('queue',j.id),[SC.SCENARIO]:{index:SCENARIO_BASELINE},[SC.SEQ]:'0',...pcv(j.prio)})}){id}}`);
+      items.push({id:r.create_item.id,name:j.name,lane:null,mat:j.mat,hgt:j.hgt,prio:j.prio,seq:0,pinned:null,
+                  floorId:String(j.id),origin:'queue',committed:true,pushed:false,onLane:false});
+    }
+    greedy(items.filter(i=>i.committed && !i.lane));
+    repack();
+    for(const i of items.filter(i=>i.committed&&i.lane)) await moveItem(i.id,i.lane);
+    setConn('ok','Committed queue placed');
+  }catch(e){setConn('err','Failed — '+e.message);}
+  btn.disabled=false;
+}
+
+// ═══ AUTO-PLACE ════════════════════════════════════════════════════════════
+// A batch is every build sharing a base name. The Add Build quantity field
+// already writes "Bracket #1…#7", so batch membership comes free — no extra
+// column, no manual tagging.
+const batchOf = n => (n||'').replace(/\s+#\d+\s*$/,'').trim() || (n||'');
+const numOf   = n => { const m=(n||'').match(/#(\d+)\s*$/); return m ? +m[1] : 0; };
+// Final tiebreak for any ordering: batch name, then build number. Inside a batch
+// every build ties on priority and material, so without this #7 can land before #2.
+const stable = (a,b) => batchOf(a.name).localeCompare(batchOf(b.name)) || numOf(a.name)-numOf(b.name);
+
+// ─── ADD BUILDS ──────────────────────────────────────────────────────────────
+// Names carry the batch AND the build number, and everything downstream — the
+// packer, the queue chips, the auto-place list — parses them back out. So they
+// have to sort correctly. "#10" must never land before "#1".
+//
+// numOf() already sorts numerically, so ordering is right. But the NAMES are
+// also read by humans and by Monday's own board sort, both of which sort as
+// text — where "#10" < "#2". Zero-pad once the batch goes past 9 and both the
+// app and the board agree.
+function buildName(base,i,total){
+  if(total<2) return base;
+  const w=String(total).length;              // 9 -> 1, 10 -> 2, 100 -> 3
+  return `${base} #${String(i).padStart(w,'0')}`;
+}
+
+async function addBuilds(){
+  const nm=(document.getElementById('a-n').value||'').trim();
+  const m=picked('a-m'), h=picked('a-h'), pr=pickedStr('a-p');
+  const q=Math.max(1,Math.min(100,parseInt(document.getElementById('a-q').value)||1));
+  const err=document.getElementById('a-e');
+  const fail=t=>{err.textContent=t;err.style.display='block';};
+  err.style.display='none';
+
+  if(!nm)  return fail('Give the build a name.');
+  if(!m)   return fail('Pick a material.');
+  if(!h)   return fail('Pick a build height.');
+
+  closeAll();
+  setConn('sync',`Adding ${q} build${q>1?'s':''}...`);
+  try{
+    for(let i=1;i<=q;i++){
+      const name=buildName(nm,i,q);
+      const r=await gql(`mutation{create_item(board_id:${SB_BOARD}, group_id:${S(SB_QUEUE)}, item_name:${S(name)},
+        column_values:${CV({[SC.MATERIAL]:{ids:[m]},[SC.HEIGHT]:{ids:[h]},
+          [SC.DURATION]:String(DUR[h][m]),[SC.SCENARIO]:{index:SCENARIO_BASELINE},
+          [SC.SEQ]:'0',...pcv(pr)})}){id}}`);
+      items.push({id:r.create_item.id,name,lane:null,mat:m,hgt:h,prio:pr,seq:0,pinned:null,
+                  floorId:null,origin:null,committed:false,pushed:false,onLane:false});
+    }
+    setConn('ok',`${q} build${q>1?'s':''} added`);
+  }catch(e){ setConn('err','Add failed — '+e.message); }
+  repack();
+}
+
+function apPick(g,b){document.querySelectorAll(`#${g} .seg`).forEach(x=>x.classList.remove('on'));b.classList.add('on');apSum();}
+function apVal(g){const s=document.querySelector(`#${g} .seg.on`);return s?s.dataset.v:null;}
+
+function openAutoPlace(){
+  if(!ready){alert('Load the boards first.');return;}
+  const q=items.filter(i=>!i.lane && !i.committed && !i.pushed);
+  if(!q.length){alert('Nothing planned is waiting.\n\nCommitted floor-queue jobs have their own orange button.');return;}
+
+  // Printers — Down lanes are shown but unselectable, so it's obvious why a
+  // printer isn't an option rather than it just being absent.
+  document.getElementById('ap-lanes').innerHTML=Object.entries(LANES).map(([g,L])=>{
+    const down=!READY(g);
+    const st=statuses[g]??1;
+    const why = st===2 ? ' — maintenance' : st===3 ? ' — down' : '';
+    return `<div class="ck ${down?'off-down':'on'}" data-g="${g}" ${down?'':`onclick="this.classList.toggle('on');apSum()"`}>
+      ${L.name.replace('MJF ','')}${why}</div>`;
+  }).join('');
+
+  // Jobs, grouped by batch
+  const groups={};
+  for(const it of q){ (groups[batchOf(it.name)] ||= []).push(it); }
+  for(const k of Object.keys(groups)) groups[k].sort((a,b)=>numOf(a.name)-numOf(b.name));
+  document.getElementById('ap-jobs').innerHTML=Object.entries(groups).map(([b,list])=>{
+    const hrs=list.reduce((a,b)=>a+DUR[b.hgt][b.mat],0);
+    return `<div class="jser">
+      <div class="jsh"><span class="jsh-n">${esc(b)}</span>
+        <span class="jsh-c">${list.length} build${list.length>1?'s':''} · ${hrs}h · ${ML[list[0].mat]}</span>
+        <button class="jsh-t" onclick="apBatchToggle(this)">Toggle</button></div>
+      <div class="jbs">${list.map(it=>`<div class="jb on jm-${it.mat}" data-id="${it.id}"
+        onclick="this.classList.toggle('on');apSum()">${esc(it.name.split('#')[1]?'#'+it.name.split('#')[1]:it.name)}</div>`).join('')}</div>
+    </div>`;
+  }).join('');
+
+  apKeep();          // also sets the printer default for the current mode
+  document.getElementById('ap').classList.add('open');
+  document.getElementById('ov').classList.add('open');
+}
+function apBatchToggle(btn){
+  const box=btn.closest('.jser');
+  const jbs=[...box.querySelectorAll('.jb')];
+  const allOn=jbs.every(j=>j.classList.contains('on'));
+  jbs.forEach(j=>j.classList.toggle('on',!allOn));
+  apSum();
+}
+function apAll(on){document.querySelectorAll('#ap-jobs .jb').forEach(j=>j.classList.toggle('on',on));apSum();}
+
+// Batch grouping is a toggle, not a peer of the placement modes. Off means the
+// batch simply isn't a consideration; On asks the only follow-up that matters —
+// one printer, or spread across the fleet.
+function apKeep(){
+  const on = apVal('ap-keep')==='on';
+  document.getElementById('ap-keep-how').style.display = on?'block':'none';
+  apLaneDefault();
+}
+function apAllLanes(on){
+  document.querySelectorAll('#ap-lanes .ck:not(.off-down)').forEach(c=>c.classList.toggle('on',on));
+  apSum();
+}
+// "On one printer" means you're aiming a batch at a specific machine — so start
+// with NONE selected and make that choice deliberate. Every other mode wants the
+// whole fleet working, so default to all.
+function apLaneDefault(){
+  const one = apVal('ap-keep')==='on' && apVal('ap-how')==='onelane';
+  apAllLanes(!one);
+  const hint=document.getElementById('ap-lane-hint');
+  if(hint) hint.innerHTML = one
+    ? 'Pick the printer this batch should run on. Select more than one and the batches get shared out between them — each batch still stays whole on a single machine.'
+    : 'All available printers. Deselect any you want to keep free.';
+}
+function apCfg(){
+  const keep = apVal('ap-keep')==='on';
+  return {
+    p1: apVal('ap-p1'), p2: apVal('ap-p2'),
+    lead: Number(apVal('ap-lead')),
+    mode: keep ? apVal('ap-how') : 'discrete',
+    lanes: [...document.querySelectorAll('#ap-lanes .ck.on')].map(e=>e.dataset.g),
+    ids: new Set([...document.querySelectorAll('#ap-jobs .jb.on')].map(e=>e.dataset.id)),
+  };
+}
+function apSum(){
+  const c=apCfg();
+  const n=c.ids.size, L=c.lanes.length;
+  const hrs=items.filter(i=>c.ids.has(i.id)).reduce((a,b)=>a+DUR[b.hgt][b.mat],0);
+  const nBatches=new Set(items.filter(i=>c.ids.has(i.id)).map(i=>batchOf(i.name))).size;
+  const modeTxt={
+    discrete:'batches ignored — packed for earliest finish',
+    onelane:`each batch kept on one printer`,
+    fleet:'each batch finished as a block before the next starts',
+  }[c.mode];
+  const el=document.getElementById('ap-sum');
+  const go=document.getElementById('ap-go');
+  if(!n||!L){
+    el.innerHTML=`<b>Nothing to do.</b> ${!n?'Select at least one job.':'Select at least one printer.'}`;
+    go.disabled=true; return;
+  }
+  // One printer with more batches than printers isn't wrong, it just queues them —
+  // say so, rather than letting someone discover it in the Gantt.
+  const warn = (c.mode==='onelane' && nBatches>L)
+    ? `<br><span style="color:var(--yellow)">${nBatches} batch${nBatches>1?'es':''} onto ${L} printer${L>1?'s':''} — some batches will wait their turn.</span>` : '';
+  go.disabled=false;
+  el.innerHTML=`<b>${n} build${n>1?'s':''}</b> in <b>${nBatches} batch${nBatches>1?'es':''}</b> · ${hrs}h across <b>${L} printer${L>1?'s':''}</b><br>
+    Ordered by <b>${c.p1}</b>, then <b>${c.p2}</b> · ${modeTxt}${warn}<br>
+    <span style="opacity:.7">≈ ${(hrs/L/24).toFixed(1)} days of wall clock if the lanes were empty</span>`;
+}
+
+// ── The planner. One lane-choosing function, three ways of feeding it work.
+function bestLane(lanes,it,aff){
+  let best=null,bs=Infinity;
+  for(const l of lanes){
+    const st=winOpen(new Date(l.free));
+    const pen=(l.mat&&l.mat!==it.mat)?aff*HOUR:0;   // virtual cost for choosing; never moves the real start
+    if(st.getTime()+pen<bs){bs=st.getTime()+pen;best={l,st};}
+  }
+  return best;
+}
+function assign(l,st,it){
+  it.lane=l.g; it.seq=nextSeq(l.g); it.pinned=null;
+  l.free=new Date(st.getTime()+DUR[it.hgt][it.mat]*HOUR);
+  l.mat=it.mat;
+}
+
+function plan(list,cfg){
+  const aff=parseFloat(document.getElementById('s-aff').value)||0;
+  const lanes=cfg.lanes.filter(READY).map(g=>{
+    const rows=packed[g]||[], last=rows[rows.length-1];
+    const lastLive=(live[g]||[]).slice().sort((a,b)=>a.end-b.end).pop();
+    return {g, free:last?last.end:laneFree(g), mat:last?last.mat:(lastLive?lastLive.mat:null)};
+  });
+  if(!lanes.length){alert('No usable printers selected.');return false;}
+
+  // Batches get an order of their own, ranked by their most urgent member — a
+  // batch is only as low-priority as its highest-priority build.
+  const bIdx={}; let n=0;
+  for(const it of [...list].sort((a,b)=>rank(a.prio)-rank(b.prio) || stable(a,b))){
+    const b=batchOf(it.name); if(!(b in bIdx)) bIdx[b]=n++;
+  }
+  const K={
+    priority: it=>rank(it.prio),
+    material: it=>(it.mat===cfg.lead?0:1),
+    batch:    it=>bIdx[batchOf(it.name)]??999,
+    shortest: it=>DUR[it.hgt][it.mat],
+  };
+  const cmp=(a,b)=> (K[cfg.p1](a)-K[cfg.p1](b)) || (K[cfg.p2](a)-K[cfg.p2](b))
+                 || (rank(a.prio)-rank(b.prio)) || (a.mat-b.mat) || stable(a,b);
+  const ordered=[...list].sort(cmp);
+
+  if(cfg.mode==='discrete'){
+    for(const it of ordered){ const b=bestLane(lanes,it,aff); assign(b.l,b.st,it); }
+    return true;
+  }
+
+  // Group into batches, keeping the order the sort produced.
+  const groups=[];
+  for(const it of ordered){
+    const b=batchOf(it.name);
+    let g=groups.find(x=>x.b===b);
+    if(!g){ g={b,list:[]}; groups.push(g); }
+    g.list.push(it);
+  }
+
+  if(cfg.mode==='onelane'){
+    // The whole batch lands on one printer, back to back. Pick the lane that
+    // can START the batch soonest — with a full batch that's also the lane that
+    // finishes it soonest, since the run length is identical everywhere.
+    for(const g of groups){
+      const b=bestLane(lanes,g.list[0],aff);
+      for(const it of g.list){
+        const st=winOpen(new Date(b.l.free));
+        assign(b.l,st,it);
+      }
+    }
+    return true;
+  }
+
+  // 'fleet' — spread a batch across the selected lanes, but finish it before
+  // starting the next. The batch clears as fast as the fleet allows, and no
+  // later batch jumps ahead of it.
+  for(const g of groups){
+    for(const it of g.list){ const b=bestLane(lanes,it,aff); assign(b.l,b.st,it); }
+  }
+  return true;
+}
+
+async function runAutoPlace(){
+  const cfg=apCfg();
+  const todo=items.filter(i=>cfg.ids.has(i.id) && !i.lane && !i.committed && !i.pushed);
+  if(!todo.length) return;
+  closeAll();
+  if(!plan(todo,cfg)) return;
+  repack();
+  setConn('sync',`Placing ${todo.length}...`);
+  try{
+    for(const i of todo) if(i.lane) await moveItem(i.id,i.lane);
+    setConn('ok',`${todo.length} placed`);
+  }catch(e){ setConn('err','Write failed — '+e.message); }
+}
+
+// Committed queue uses the same planner with sensible fixed settings: priority
+// first, then material, discrete, whole fleet. It's real work — it should just
+// go where it fits soonest.
+function greedy(list){
+  const usable=Object.keys(LANES).filter(READY);
+  return plan(list,{p1:'priority',p2:'material',lead:1,mode:'discrete',lanes:usable});
+}
+
+// ── Add planned builds ─────────────────────────────────────────────────────
+function openAdd(){
+  document.getElementById('a-n').value=''; document.getElementById('a-q').value=1;
+  document.querySelectorAll('.o').forEach(b=>b.classList.remove('on'));
+  document.getElementById('a-e').style.display='none';
+  document.getElementById('add').classList.add('open');
+  document.getElementById('ov').classList.add('open');
+  setTimeout(()=>document.getElementById('a-n').focus(),80);
+}
+function pick(g,b){document.querySelectorAll(`#${g} .o`).forEach(x=>x.classList.remove('on'));b.classList.add('on');}
+function picked(g){const s=document.querySelector(`#${g} .o.on`);return s?Number(s.dataset.v):null;}
+function pickedStr(g){const s=document.querySelector(`#${g} .o.on`);return s?s.dataset.v:null;}
+
+// ── Change a build's priority. Re-sorting the lane is a separate, explicit act —
+// bumping something to Critical shouldn't silently reshuffle a plan you placed
+// by hand. Use "Re-sequence by priority" when you want that.
+async function setPrio(id,p){
+  const it=items.find(x=>x.id===id); if(!it) return;
+  it.prio=p; open_(id); repack();
+  if(!PRIO_COL){setConn('err','No Priority column on the board');return;}
+  try{ await gql(`mutation{change_multiple_column_values(board_id:${SB_BOARD}, item_id:${id},
+    column_values:${CV(pcv(p))}){id}}`); }
+  catch(e){setConn('err','Write failed — '+e.message);}
+}
+
+
+// ═══ SEND TO PRODUCTION BOARD ══════════════════════════════════════════════
+// Push mirrors the floor app's own delayed-create: pre-set date + start time,
+// set the Printer dropdown, mark Scheduled. The Lambda respects a pre-set start
+// and only cascades on overlap — and these land past everything on the lane.
+//
+// The one real risk is STALENESS, not divergence: our start times were computed
+// against the fleet as it looked at load time. If an operator ran two hours long
+// since then, a pushed start could land on top of live work and the Lambda WOULD
+// cascade it. So we re-read the floor and re-pack before showing you anything,
+// and flag any job whose time moved.
+let sfSnapshot={};
+let sfFloorMoved=false;
+// A build only counts as "shifted" if it moved lanes, or moved by a minute or
+// more. Anything smaller is recomputation noise, not a schedule change.
+const SHIFT_TOL=60000;
+
+async function openSend(){
+  if(!ready){alert('Load the boards first.');return;}
+  const before={};
+  for(const p of Object.values(packed).flat()) before[p.id]={start:p.start,lane:p.lane};
+  const fpBefore=floorPrint();
+
+  setConn('sync','Re-reading the floor...');
+  await loadAll();                     // fresh fleet state, then repack against it
+  sfSnapshot=before;
+  sfFloorMoved = floorPrint()!==fpBefore;   // did the SHOP change, or just our clock?
+
+  sfRender();
+  document.getElementById('sf').classList.add('open');
+  document.getElementById('ov').classList.add('open');
+}
+
+function sfDest(){ return apVal('sf-dest') || 'lane'; }
+function sfIds(){ return selItems().map(i=>i.id); }
+
+function sfRender(){
+  const dest=sfDest();
+  const chosen=Object.values(packed).flat().filter(p=>sel.has(p.id) && selectable(p));
+  const body=document.getElementById('sf-body');
+  const go=document.getElementById('sf-go');
+
+  if(!chosen.length){
+    body.innerHTML=`<div class="s-empty" style="padding:20px 0">Nothing selected.<br>
+      Click builds on the chart to choose what to send.</div>`;
+    document.getElementById('sf-sum').innerHTML=''; go.disabled=true; return;
+  }
+
+  // A committed job is ALREADY in the floor queue. Sending it there is a no-op.
+  const noop = dest==='queue' ? chosen.filter(p=>p.committed) : [];
+  const act  = chosen.filter(p=>!noop.includes(p));
+
+  const shifted=p=>{
+    const b=sfSnapshot[p.id];
+    if(!b) return false;
+    return b.lane!==p.lane || Math.abs(b.start.getTime()-p.start.getTime())>=SHIFT_TOL;
+  };
+  const moved=act.filter(shifted);
+
+  let warn='';
+  // Only say the shop moved if the shop moved. Previously any millisecond of
+  // clock drift printed this, which was simply false.
+  if(dest==='lane' && moved.length && sfFloorMoved)
+    warn+=`<div class="sfwarn"><b>${moved.length} build${moved.length>1?'s':''} shifted</b> — the floor changed since you planned (a job started or ended off-schedule, or a printer status changed). The times below are current and are what will be written.</div>`;
+  if(noop.length)
+    warn+=`<div class="sfwarn"><b>${noop.length} committed job${noop.length>1?'s':''} skipped</b> — they're already sitting in the production queue. Nothing to do.</div>`;
+
+  const rows = act.map(p=>{
+    const b=sfSnapshot[p.id];
+    const isShift=dest==='lane' && sfFloorMoved && shifted(p);
+    const how = p.committed
+      ? `<span style="color:var(--orange)">move from queue</span>`
+      : `<span style="color:var(--violet)">create</span>`;
+    return `<tr>
+      <td class="nm">${esc(p.name)}</td>
+      <td>${how}</td>
+      <td>${dest==='lane' ? LANES[p.lane].name.replace('MJF Printer ','P') : 'Queue'}</td>
+      <td class="${isShift?'sfmoved':''}">${dest==='lane' ? fdt(p.start) : '—'}</td>
+      <td class="${isShift?'sfmoved':''}">${dest==='lane' ? fdt(p.end) : '—'}</td>
+      <td style="color:${p.mat===1?'#e6b800':'#5cb85c'}">${ML[p.mat]}</td></tr>`;
+  }).join('');
+
+  body.innerHTML = warn + (act.length ? `<table class="sft">
+    <tr><th>Build</th><th>Action</th><th>Lands in</th><th>Start</th><th>End</th><th>Mat</th></tr>
+    ${rows}</table>` : '');
+
+  go.disabled=!act.length;
+  go.innerHTML = dest==='lane' ? '&#8593; Send to printer lanes' : '&#8593; Send to production queue';
+  sfSum(act,dest);
+}
+
+function sfSum(act,dest){
+  const el=document.getElementById('sf-sum');
+  if(!act.length){ el.innerHTML='<b>Nothing to send.</b>'; return; }
+  const creates=act.filter(p=>!p.committed).length;
+  const moves=act.filter(p=>p.committed).length;
+  const parts=[];
+  if(creates) parts.push(`<b>${creates}</b> new job${creates>1?'s':''} created`);
+  if(moves)   parts.push(`<b>${moves}</b> existing queue job${moves>1?'s':''} moved`);
+
+  if(dest==='queue'){
+    el.innerHTML=`${parts.join(' · ')}<br>
+      Lands in the production queue with <b>no dates, no times, no status</b> — operators assign them.<br>
+      <span style="opacity:.75">Reversible from here.</span>`;
+  }else{
+    const lanes=new Set(act.map(p=>p.lane)).size;
+    const first=new Date(Math.min(...act.map(p=>p.start)));
+    el.innerHTML=`${parts.join(' · ')} onto <b>${lanes} printer${lanes>1?'s':''}</b>, first starting <b>${fdt(first)}</b><br>
+      <span style="opacity:.75">Operators see these immediately. Reversible from here.</span>`;
+  }
+}
+
+async function doSend(){
+  const dest=sfDest();
+  const chosen=Object.values(packed).flat().filter(p=>sel.has(p.id) && selectable(p));
+  const act = dest==='queue' ? chosen.filter(p=>!p.committed) : chosen;
+  if(!act.length) return;
+
+  // The Lambda checks printer status BEFORE it schedules and bounces the job to
+  // the Queue if the printer isn't Production Ready. Only matters for lane sends.
+  if(dest==='lane'){
+    const bad=[...new Set(act.filter(p=>!READY(p.lane)).map(p=>p.lane))];
+    if(bad.length){
+      alert(`Can't send — ${bad.map(g=>LANES[g].name).join(', ')} ${bad.length>1?'are':'is'} not Production Ready.\n\n`+
+            `The floor scheduler bounces new jobs on a non-ready printer straight into the Queue, so these would never land in the lane.`);
+      return;
+    }
+  }
+  const where = dest==='lane' ? 'the printer lanes' : 'the production queue';
+  if(!confirm(`Send ${act.length} build${act.length>1?'s':''} to ${where}?\n\nOperators will see them immediately.`)) return;
+  closeAll();
+
+  let n=0;
+  for(const p of act){
+    setConn('sync',`Sending ${++n}/${act.length}...`);
+    try{
+      const it=items.find(x=>x.id===p.id);
+      let fid=p.floorId, origin=p.origin;
+
+      if(dest==='lane'){
+        const sched={
+          [FW.PRINTER]:{ids:[LANES[p.lane].dd]},
+          [FW.PRINT_STATUS]:{ids:[FLOOR_SCHEDULED]},
+          // Floor board keeps date and hour in SEPARATE, LOCAL columns — unlike
+          // the sandbox's combined UTC column. Do not convert.
+          [FC.PRINT_DATE]:{date:`${p.start.getFullYear()}-${p2(p.start.getMonth()+1)}-${p2(p.start.getDate())}`},
+          [FC.START_TIME]:{hour:p.start.getHours(), minute:p.start.getMinutes()},
+        };
+
+        if(p.committed){
+          // ── MOVE. The job already exists in the floor queue. Creating it again
+          // would duplicate real customer work. Set the schedule BEFORE the move,
+          // exactly as the floor app's Assign does — the Lambda reads the pre-set
+          // start on move_pulse_into_group, respects it, and only cascades on overlap.
+          await gql(`mutation{change_multiple_column_values(board_id:${FLOOR_BOARD}, item_id:${fid},
+            column_values:${CV(sched)}){id}}`);
+          await gql(`mutation{move_item_to_group(item_id:${fid}, group_id:${S(p.lane)}){id}}`);
+          origin='queue';
+        }else{
+          // ── CREATE.
+          const cv={[FC.MATERIAL]:{ids:[p.mat]},[FC.HEIGHT]:{ids:[p.hgt]},...sched};
+          if(p.prio && FLOOR_PRIO_INDEX[p.prio]!=null) cv[FC.PRIORITY]={index:FLOOR_PRIO_INDEX[p.prio]};
+          const r=await gql(`mutation{create_item(board_id:${FLOOR_BOARD}, group_id:${S(p.lane)},
+            item_name:${S(p.name)}, column_values:${CV(cv)}){id}}`);
+          fid=r.create_item.id; origin='new';
+        }
+
+      }else{
+        // ── QUEUE. Unscheduled work. Everything time-related must be empty, or an
+        // operator sees a job with a phantom start date it was never assigned.
+        // Mirrors the floor app's queue-create: no Printer, no Print Status — a
+        // Monday automation sets those for queue items.
+        const cv={[FC.MATERIAL]:{ids:[p.mat]},[FC.HEIGHT]:{ids:[p.hgt]},
+                  [FC.PRINT_DATE]:{},[FC.START_TIME]:{},[FC.END_DATE]:{},[FC.END_TIME]:{}};
+        if(p.prio && FLOOR_PRIO_INDEX[p.prio]!=null) cv[FC.PRIORITY]={index:FLOOR_PRIO_INDEX[p.prio]};
+        const r=await gql(`mutation{create_item(board_id:${FLOOR_BOARD}, group_id:${S(FLOOR_QUEUE_GROUP)},
+          item_name:${S(p.name)}, column_values:${CV(cv)}){id}}`);
+        fid=r.create_item.id; origin='new';
+        // It's floor-queue work now, not a placement. Take it off the lane.
+        if(it){ it.lane=null; it.pinned=null; it.seq=0; }
+        await moveItem(p.id,null);
+      }
+
+      // Stamp the link back immediately, one job at a time. If the next one fails,
+      // everything already sent is recorded and recallable — no orphans.
+      await gql(`mutation{change_multiple_column_values(board_id:${SB_BOARD}, item_id:${p.id},
+        column_values:${CV({[SC.PUSHED]:{checked:'true'},[SC.FLOOR_ID]:makeRef(origin,fid)})}){id}}`);
+      if(it){ it.floorId=String(fid); it.origin=origin; }
+
+    }catch(e){
+      setConn('err',`Sent ${n-1}/${act.length} — then failed: ${e.message}`);
+      clearSel(); await loadAll(); return;
+    }
+  }
+  setConn('ok',`${act.length} sent to ${dest==='lane'?'production':'the floor queue'}`);
+  clearSel();
+  await loadAll();
+}
+
+// Recall. Origin decides everything: a job WE created gets deleted; a job that
+// came from your floor queue gets moved BACK to the queue and unscheduled. It is
+// never deleted — that would destroy real customer work.
+async function recall(id){
+  const it=items.find(x=>x.id===id);
+  if(!it||!it.floorId) return;
+
+  // Verify against the floor RIGHT NOW. "Probably not running" is not good enough
+  // when the next line deletes a real job.
+  setConn('sync','Checking the floor...');
+  try{
+    const d=await gql(`query{items(ids:[${it.floorId}]){id state group{id} column_values(ids:["${FC.STATUS}"]){value}}}`);
+    const f=d?.items?.[0];
+    if(!f || (f.state && f.state!=='active')){
+      alert('That job no longer exists on the floor board.'); await loadAll(); return;
+    }
+    let st=null; try{ const v=JSON.parse(f.column_values?.[0]?.value||'null'); if(v) st=v?.ids?.[0]??null; }catch{}
+    if(st===FLOOR_RUNNING){
+      alert(`"${it.name}" is RUNNING on the floor.\n\nAn operator pressed Start Now — the print is physically underway. It can't be recalled. If it must stop, cancel it on the production board.`);
+      setConn('ok','Recall blocked — job is running'); return;
+    }
+    if(st===FLOOR_DONE){
+      alert(`"${it.name}" has already COMPLETED. Nothing to recall.`);
+      await loadAll(); return;
+    }
+  }catch(e){ setConn('err','Could not verify status — '+e.message); return; }
+
+  const mine = it.origin!=='queue';
+  const msg = mine
+    ? `Recall "${it.name}" from the production board?\n\nDeletes floor item ${it.floorId} — we created it, so it's ours to remove.`
+    : `Return "${it.name}" to the production queue?\n\nThis job came FROM your floor queue, so it will NOT be deleted — it goes back to the queue with its dates and status cleared.`;
+  if(!confirm(msg+`\n\nIf an operator has already started it, do NOT do this — handle it on the floor board.`)) return;
+
+  closeAll(); setConn('sync','Recalling...');
+  try{
+    if(mine){
+      await gql(`mutation{delete_item(item_id:${it.floorId}){id}}`);
+      await gql(`mutation{change_multiple_column_values(board_id:${SB_BOARD}, item_id:${id},
+        column_values:${CV({[SC.PUSHED]:{checked:'false'},[SC.FLOOR_ID]:''})}){id}}`);
+    }else{
+      // Back to the floor queue, fully unscheduled. Printer → Queue, status cleared.
+      await gql(`mutation{change_multiple_column_values(board_id:${FLOOR_BOARD}, item_id:${it.floorId},
+        column_values:${CV({[FC.PRINT_DATE]:{},[FC.START_TIME]:{},[FC.END_DATE]:{},[FC.END_TIME]:{},
+                            [FW.PRINTER]:{ids:[FLOOR_QUEUE_DD]},[FW.PRINT_STATUS]:{}})}){id}}`);
+      await gql(`mutation{move_item_to_group(item_id:${it.floorId}, group_id:${S(FLOOR_QUEUE_GROUP)}){id}}`);
+      // The sandbox row stays linked — it's a committed mirror again.
+      await gql(`mutation{change_multiple_column_values(board_id:${SB_BOARD}, item_id:${id},
+        column_values:${CV({[SC.PUSHED]:{checked:'false'}})}){id}}`);
+    }
+    setConn('ok','Recalled');
+  }catch(e){ setConn('err','Recall failed — '+e.message); }
+  clearSel();
+  await loadAll();
+}
+
+// ═══ RENDER ════════════════════════════════════════════════════════════════
+function range(){const s=new Date(ref);s.setHours(0,0,0,0);const e=new Date(s);
+  if(view==='day')e.setDate(e.getDate()+1); else if(view==='week')e.setDate(e.getDate()+7); else e.setDate(e.getDate()+28);
+  return{start:s,end:e};}
+const pc=(d,r)=>((d-r.start)/(r.end-r.start))*100;
+function monday(d){const x=new Date(d);const w=x.getDay();x.setDate(x.getDate()+(w===0?-6:1-w));x.setHours(0,0,0,0);return x;}
+function setView(v){view=v;['day','week','month'].forEach(k=>document.getElementById('v-'+k).classList.toggle('active',k===v));
+  ref=v==='day'?new Date():monday(new Date());badge();render();}
+function nav(d){const x=new Date(ref);
+  if(view==='day')x.setDate(x.getDate()+d); else if(view==='week')x.setDate(x.getDate()+7*d); else x.setDate(x.getDate()+28*d);
+  ref=x;badge();render();}
+function today(){ref=view==='day'?new Date():monday(new Date());badge();render();}
+function badge(){const r=range(),e=document.getElementById('badge');
+  if(view==='day')e.textContent=r.start.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  else e.textContent=r.start.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+new Date(r.end-1).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+
+function render(){
+  if(!ready) return;
+  const r=range(), now=new Date();
+  const o=+document.getElementById('s-open').value||6, c=+document.getElementById('s-close').value||2;
+
+  const slots=[];
+  if(view==='day'){
+    for(let h=0;h<24;h++){
+      const t=new Date(r.start); t.setHours(h,0,0,0);
+      slots.push({main:`${h%12||12}`,sub:h<12?'AM':'PM',bo:startBlocked(t)});
+    }
+  }else{
+    const n=view==='week'?7:28, x=new Date(r.start);
+    for(let i=0;i<n;i++){
+      // A day column is shaded only if a start is blocked for the WHOLE day —
+      // Saturday morning and Monday morning are partly open, so they aren't.
+      const noon=new Date(x); noon.setHours(12,0,0,0);
+      slots.push({main:x.toLocaleDateString('en-US',{weekday:'narrow'}),sub:x.getDate(),
+        today:x.toDateString()===now.toDateString(), bo:startBlocked(noon)});
+      x.setDate(x.getDate()+1);
+    }
+  }
+
+  let h=`<div class="tl-header"><div class="tl-label-spacer"><span>Printer</span></div><div class="tl-slots">`+
+    slots.map(s=>`<div class="tl-slot ${s.today?'today-col':''} ${s.bo?'blackout':''}">
+      <div class="tl-slot-main">${s.main}</div><div class="tl-slot-sub">${s.sub}</div></div>`).join('')+`</div></div>`;
+
+  const np=pc(now,r);
+  // floor item id -> our sandbox row, for the ones we sent
+  const ours={};
+  for(const it of items) if(it.floorId && it.pushed) ours[it.floorId]=it.id;
+  for(const [g,L] of Object.entries(LANES)){
+    const st=statuses[g]??1, down=st===3;
+    const bc=st===1?'b-ready':st===2?'b-maint':'b-down', bt=st===1?'Ready':st===2?'Maint':'Down';
+    const lv=live[g]||[], pk=packed[g]||[];
+    const nc=pk.filter(p=>p.committed).length, np2=pk.filter(p=>!p.committed&&!p.pushed).length;
+
+    h+=`<div class="printer-row ${st===1?'row-ready':st===2?'row-maint':'row-down'}">
+      <div class="pr-label"><div class="pr-name">${L.name.replace('MJF ','')}</div>
+        <div class="pr-badge ${bc}">${bt}</div>
+        <div class="pr-stat">${lv.length} live · <i>${nc} com</i> · <b>${np2} plan</b></div></div>
+      <div class="pr-timeline ${down?'down-bg':''}">
+        <div class="grid-lines">${slots.map(s=>`<div class="grid-line ${s.bo?'bo':''}"></div>`).join('')}</div>`;
+    if(np>=0&&np<=100) h+=`<div class="now-line" style="left:${np.toFixed(3)}%"></div>`;
+
+    for(const j of lv){
+      if(!j.start||!j.end||j.end<r.start||j.start>r.end) continue;
+      const L1=Math.max(0,pc(j.start,r)), R1=Math.min(100,pc(j.end,r));
+      const sbId=ours[String(j.id)];
+      const run=j.status===FLOOR_RUNNING;
+      const tag = sbId ? (run?'LIVE — operator started it':'FROM YOUR PLAN — click to recall') : 'LIVE — locked';
+      h+=`<div class="blk live m${j.mat} ${j.start<=now&&j.end>=now?'running':''} ${sbId?'ours':''} ${run?'started':''} ${pc(j.start,r)<0?'cl':''} ${pc(j.end,r)>100?'cr':''}"
+        style="left:${L1.toFixed(3)}%;width:${Math.max(R1-L1,.3).toFixed(3)}%"
+        ${sbId?`onclick="open_('${sbId}')"`:''}
+        onmouseenter="tip(event,'${esc(j.name)}','${tag}','${fdt(j.start)}','${fdt(j.end)}','${j.dur}h')" onmouseleave="ht()">
+        <div class="blk-in"><div class="blk-n">${esc(j.name)}</div><div class="blk-t">${ft(j.start)} → ${ft(j.end)}</div></div></div>`;
+    }
+    for(const p of pk){
+      if(p.end<r.start||p.start>r.end) continue;
+      const L1=Math.max(0,pc(p.start,r)), R1=Math.min(100,pc(p.end,r));
+      const can=selectable(p), on=can&&sel.has(p.id);
+      const k = on ? `sel sm${p.mat}`
+              : p.pushed ? `sent sm${p.mat}`
+              : p.committed ? `com cm${p.mat}` : `plan pm${p.mat}`;
+      const dot=(p.prio&&!on)?`<span class="pdot" style="background:${PCOL[p.prio]}"></span>`:'';
+      const tag = on?'SELECTED':p.pushed?'SENT — syncing':p.committed?'COMMITTED':'PLANNED';
+      // Click selects. Double-click opens the panel. Detail is the rarer action.
+      const handlers = can
+        ? `onclick="togSel(event,'${p.id}')" ondblclick="onDbl(event,'${p.id}')"`
+        : `onclick="open_('${p.id}')"`;
+      h+=`<div class="blk ${k} ${can?'selectable':''} ${p.prio==='Critical'&&!on?'crit':''} ${p.pinned?'pinned':''} ${pc(p.start,r)<0?'cl':''} ${pc(p.end,r)>100?'cr':''}"
+        style="left:${L1.toFixed(3)}%;width:${Math.max(R1-L1,.3).toFixed(3)}%"
+        ${handlers}
+        onmouseenter="tip(event,'${esc(p.name)}','${tag}','${fdt(p.start)}','${fdt(p.end)}','${p.dur}h','${p.prio||'—'}')" onmouseleave="ht()">
+        <div class="blk-in"><div class="blk-n">${dot}${esc(p.name)}</div><div class="blk-t">${ft(p.start)} → ${ft(p.end)}</div></div></div>`;
+    }
+    h+=`</div></div>`;
+  }
+  document.getElementById('gantt').innerHTML=h;
+  strips(); metrics(r); paintSelBtns();
+}
+
+// PA12 = 1, TPU = 2. A build with no material set counts in neither — better to
+// under-report than to guess, since duration depends on it.
+function split(list,suffix=''){
+  const pa=list.filter(x=>x.mat===1).length, tp=list.filter(x=>x.mat===2).length;
+  return pair(pa,tp,suffix);
+}
+function pair(pa,tp,suffix=''){
+  const f=n=>(suffix==='h'?Math.round(n):n)+suffix;
+  return `<div class="msplit">
+    <span class="mv ${pa>0?'p':'z'}"><b>${f(pa)}</b><i>PA12</i></span>
+    <span class="mv ${tp>0?'t':'z'}"><b>${f(tp)}</b><i>TPU</i></span></div>`;
+}
+function metrics(r){
+  const all=Object.values(packed).flat();
+  const liveJobs=Object.values(live).flat();
+  const comJobs=all.filter(p=>p.committed);
+  const planJobs=all.filter(p=>!p.committed && !p.pushed);
+  const sentJobs=items.filter(i=>i.pushed);
+  const nLive=liveJobs.length;
+  const nCom=comJobs.length;
+  const nPlan=planJobs.length;
+  const nSent=sentJobs.length;
+  const lanes=Object.keys(LANES).filter(READY).length;
+  let busy=0;
+  for(const g of Object.keys(LANES)){
+    if(!READY(g)) continue;
+    for(const j of [...(live[g]||[]),...(packed[g]||[])])
+      if(j.start&&j.end) busy+=Math.max(0,Math.min(j.end,r.end)-Math.max(j.start,r.start));
+  }
+  const cap=lanes*(r.end-r.start), u=cap?busy/cap*100:0;
+  // Print hours, split by material — the honest measure of load. Ten TPU builds
+  // and ten PA12 builds are the same count and nowhere near the same commitment.
+  const hrs = l => l.reduce((a,b)=>a+(b.dur||DUR[b.hgt]?.[b.mat]||0),0);
+  // pair() greys a zero — Number(0) is falsy, and "0" as a string is not, so
+  // pass numbers through toFixed only at render time.
+  const paH = hrs([...liveJobs,...comJobs,...planJobs].filter(x=>x.mat===1));
+  const tpH = hrs([...liveJobs,...comJobs,...planJobs].filter(x=>x.mat===2));
+
+  document.getElementById('metrics').innerHTML=`
+    <div class="metric m-live"><div class="metric-lbl">Live</div>${split(liveJobs)}</div>
+    <div class="metric m-com"><div class="metric-lbl">Committed</div>${split(comJobs)}</div>
+    <div class="metric m-plan"><div class="metric-lbl">Planned</div>${split(planJobs)}</div>
+    ${nSent?`<div class="metric m-sent"><div class="metric-lbl">Sent</div>${split(sentJobs)}</div>`:''}
+    <div class="metric m-hrs"><div class="metric-lbl">Print hours</div>${pair(paH,tpH,'h')}</div>
+    <div class="metric m-util ${u>90?'hot':''}"><div class="metric-lbl">Utilization</div>
+      <div class="metric-val" style="margin-top:5px">${u.toFixed(0)}%</div>
+      <div class="mv" style="margin-top:3px"><i>${lanes} printer${lanes>1?'s':''}</i></div></div>`;
+}
+
+function strips(){
+  document.getElementById('strips').style.display='block';
+  const mirrored=new Set(items.filter(i=>i.floorId).map(i=>i.floorId));
+  const unplaced=floorQ.filter(j=>!mirrored.has(j.id));
+  document.getElementById('c-count').textContent=floorQ.length;
+  document.getElementById('c-btn').disabled=!unplaced.length;
+  const placedCom=items.filter(i=>i.committed && i.lane).length;
+  document.getElementById('c-note').textContent = unplaced.length
+    ? `${unplaced.length} not in the plan — utilization below understates your true load`
+    : placedCom ? `${placedCom} placed — select on the chart to move them out of the queue into their lanes`
+    : 'all mirrored into the plan';
+  document.getElementById('c-chips').innerHTML = floorQ.length
+    ? `<div class="chips">${floorQ.map(j=>{
+        const m=items.find(i=>i.floorId===j.id);
+        const done=m&&m.lane;
+        return `<div class="chip c-com ${mirrored.has(j.id)?'done':''}" ${m?`onclick="open_('${m.id}')"`:''}>${esc(j.name)}
+          <small>${ML[j.mat]||'?'} · ${HL[j.hgt]||'?'}${done?' · '+LANES[m.lane].name.replace('MJF Printer ','P'):''}</small></div>`;
+      }).join('')}</div>`
+    : `<div class="s-empty">Floor queue is empty.</div>`;
+
+  const q=items.filter(i=>!i.lane && !i.committed && !i.pushed).sort((a,b)=> rank(a.prio)-rank(b.prio) || a.mat-b.mat || stable(a,b));
+  document.getElementById('p-count').textContent=q.length;
+  document.getElementById('q-clear').disabled=!q.length;
+  document.getElementById('q-clear').textContent=q.length?`Clear queue (${q.length})`:'Clear queue';
+  document.getElementById('p-chips').innerHTML = q.length
+    ? `<div class="chips">${q.map(p=>`<div class="chip c-plan qm-${p.mat} ${p.prio==='Critical'?'crit-chip':''}" onclick="open_('${p.id}')">${esc(p.name)}
+        <small>${ML[p.mat]} · ${HL[p.hgt]} · ${DUR[p.hgt][p.mat]}h</small>
+        ${p.prio?`<span class="pp" style="background:${PCOL[p.prio]}22;color:${PCOL[p.prio]}">${p.prio}</span>`:''}
+        <button class="chip-x" title="Delete this build" onclick="event.stopPropagation();removeItem('${p.id}')">&#10005;</button></div>`).join('')}</div>`
+    : `<div class="s-empty">Nothing waiting — every planned build is on a printer.</div>`;
+}
+
+// ═══ DETAIL ════════════════════════════════════════════════════════════════
+function open_(id){
+  const it=items.find(x=>x.id===id); if(!it) return;
+  detail=it;
+  // Once sent, the FLOOR owns the schedule — repack() no longer produces an entry
+  // for this build. Fall back to the live job we're linked to for the real times.
+  const lj = it.floorId ? Object.values(live).flat().find(j=>String(j.id)===String(it.floorId)) : null;
+  const pk = Object.values(packed).flat().find(x=>x.id===id)
+          || (lj ? {start:lj.start, end:lj.end} : null);
+  const d=DUR[it.hgt][it.mat];
+  const opts=Object.entries(LANES).filter(([g])=>READY(g))
+    .map(([g,L])=>`<option value="${g}" ${it.lane===g?'selected':''}>${L.name}</option>`).join('');
+
+  document.getElementById('dp-t').textContent=it.name;
+  const kind = it.pushed ? ['k-sent', it.origin==='queue' ? 'Scheduled — moved from the floor queue' : 'Sent — live on the production board']
+             : it.committed ? ['k-com','Committed — real floor job, still in the queue']
+             : ['k-plan','Planned — hypothetical'];
+  document.getElementById('dp-k').innerHTML=`<span class="dp-k ${kind[0]}">${kind[1]}</span>`;
+  const prioBtns = it.pushed ? '' : PRIO_COL
+    ? `<div class="opts" style="margin-bottom:4px">${PORDER.map(p=>
+        `<button class="o ${it.prio===p?'on':''}" style="${it.prio===p?`background:${PCOL[p]};color:#fff;border-color:transparent`:`color:${PCOL[p]};border-color:${PCOL[p]}55`}"
+          onclick="setPrio('${it.id}','${p}')">${p}</button>`).join('')}</div>`
+    : `<div class="note n-info">No <b>Priority</b> column found on the sandbox board. Add a Status column titled "Priority" with labels Critical / High / Medium / Low, then refresh.</div>`;
+  document.getElementById('dp-b').innerHTML=`
+    <div><div class="dp-s">Build</div>
+      <div class="dp-r"><span class="dp-l">Material</span><span class="dp-v">${ML[it.mat]}</span></div>
+      <div class="dp-r"><span class="dp-l">Build height</span><span class="dp-v">${HL[it.hgt]}</span></div>
+      <div class="dp-r"><span class="dp-l">Duration</span><span class="dp-v">${d}h</span></div>
+      <div class="dp-r"><span class="dp-l">Priority</span><span class="dp-v" style="color:${PCOL[it.prio]||'var(--text-dim)'}">${it.prio||'—'}</span></div>
+      <div class="dp-r"><span class="dp-l">Printer</span><span class="dp-v">${it.lane?LANES[it.lane].name:'Queue'}</span></div>
+      <div class="dp-r"><span class="dp-l">Start</span><span class="dp-v" style="color:var(--violet)">${pk?fdt(pk.start):'—'}</span></div>
+      <div class="dp-r"><span class="dp-l">End</span><span class="dp-v" style="color:var(--violet)">${pk?fdt(pk.end):'—'}</span></div>
+      ${it.pinned?`<div class="dp-r"><span class="dp-l">Pinned to</span><span class="dp-v" style="color:var(--yellow)">${fdt(it.pinned)}</span></div>`:''}
+      ${it.floorId?`<div class="dp-r"><span class="dp-l">Floor item</span><span class="dp-v" style="color:var(--orange)">${it.floorId}</span></div>`:''}
+    </div>
+    ${prioBtns?`<div><div class="dp-s">Priority</div>${prioBtns}</div>`:''}
+    ${it.pushed ? (lj && lj.status===FLOOR_RUNNING ? `
+    <div><div class="dp-s">Running on the floor</div>
+      <div class="note" style="background:rgba(255,61,87,.1);border:1px solid rgba(255,61,87,.4);color:var(--red)">
+        &#9654; An operator has <b>started this print</b>. It can't be recalled from here — the powder is already down.
+        If it truly has to stop, cancel it on the production board.
+      </div>
+    </div>` : `
+    <div><div class="dp-s">On the production board</div>
+      <div class="note" style="background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.3);color:var(--green)">
+        ${it.origin==='queue'
+          ? `Moved out of the floor queue into its lane. This is <b>real customer work</b> (floor item ${it.floorId}) — recalling returns it to the queue, it is never deleted.`
+          : `Sent to the floor as item <b>${it.floorId}</b>. Operators can see it. Recalling deletes it — we created it, so it's ours to remove.`}
+        <br><b>Reversible until an operator starts it.</b>
+      </div>
+      <div class="acts" style="margin-top:9px">
+        <button class="btn b-del" onclick="recall('${it.id}')">&#8617; ${it.origin==='queue'?'Return to floor queue':'Recall from production board'}</button>
+      </div>
+    </div>`) : `
+    <div><div class="dp-s">${it.lane?'Move':'Place on printer'}</div>
+      <select class="sel" id="dp-lane">${it.lane?'':'<option value="">— Select a printer —</option>'}${opts}</select>
+      <div class="acts">
+        <button class="btn b-sched" onclick="doPlace('last')">&#9654; Schedule</button>
+        <button class="btn b-next" onclick="doPlace('next')">&#9654;&#9654; Start Next</button>
+        <button class="btn b-delay" onclick="showDelay()">&#9200; Delay Job</button>
+      </div><div id="da"></div>
+    </div>
+    <div><div class="dp-s">Remove</div><div class="acts">
+      ${it.lane?`<button class="btn b-un" onclick="unplace('${it.id}')">&#9664; Back to queue</button>`:''}
+      <button class="btn b-del" onclick="removeItem('${it.id}')">&#10005; ${it.committed?'Remove from plan':'Delete build'}</button>
+    </div></div>`}
+    ${it.committed
+      ? `<div class="note n-com">This is a <b>real job</b> from the floor queue. Removing it here only takes it out of the plan — the job stays in the floor queue and will still run.</div>`
+      : `<div class="note n-info">Nothing here touches the floor. Planned builds pack in after whatever is already live on each printer.</div>`}`;
+  document.getElementById('dp').classList.add('open');
+  document.getElementById('ov').classList.add('open');
+}
+function doPlace(m){const g=document.getElementById('dp-lane').value; if(!g)return; place(detail.id,g,m,null);}
+function showDelay(){
+  const n=new Date(); n.setHours(n.getHours()+1,0,0,0);
+  const v=`${n.getFullYear()}-${p2(n.getMonth()+1)}-${p2(n.getDate())}T${p2(n.getHours())}:00`;
+  document.getElementById('da').innerHTML=`<div class="pk"><input type="datetime-local" id="di" value="${v}" oninput="dprev()" />
+    <div class="prev" id="dpv"></div></div><button class="btn b-delay" onclick="doDelay()">&#9200; Confirm Delay</button>`;
+  dprev();
+}
+function dprev(){
+  const v=document.getElementById('di').value, e=document.getElementById('dpv');
+  if(!v){e.textContent='';return;}
+  const d=new Date(v), a=winOpen(d);
+  e.innerHTML = a.getTime()!==d.getTime()
+    ? `&#8594; ${flong(a)} <span style="font-size:.68rem;opacity:.8">(pushed out of the blackout)</span>`
+    : `&#8594; ${flong(a)}`;
+}
+function doDelay(){const v=document.getElementById('di').value; if(!v)return;
+  place(detail.id, document.getElementById('dp-lane').value, 'delay', new Date(v));}
+function closeAll(){['dp','add','ap','sf'].forEach(i=>document.getElementById(i).classList.remove('open'));
+  document.getElementById('ov').classList.remove('open'); detail=null;}
+
+// ═══ HELPERS ═══════════════════════════════════════════════════════════════
+function p2(n){return String(n).padStart(2,'0');}
+function ft(d){if(!d)return'—';const h=d.getHours();return`${h%12||12}:${p2(d.getMinutes())} ${h>=12?'PM':'AM'}`;}
+function fdt(d){if(!d)return'—';return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+ft(d);}
+function flong(d){return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+' at '+ft(d);}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function tip(e,n,k,s,en,d,pr){const t=document.getElementById('tip');
+  t.innerHTML=`<div style="font-weight:700;margin-bottom:5px">${n}</div>
+    <div class="tr"><span class="tl">Class</span><span class="tv">${k}</span></div>
+    ${pr&&pr!=='—'?`<div class="tr"><span class="tl">Priority</span><span class="tv" style="color:${PCOL[pr]||'var(--accent)'}">${pr}</span></div>`:''}
+    <div class="tr"><span class="tl">Start</span><span class="tv">${s}</span></div>
+    <div class="tr"><span class="tl">End</span><span class="tv">${en}</span></div>
+    <div class="tr"><span class="tl">Duration</span><span class="tv">${d}</span></div>`;
+  t.style.left=(e.clientX+12)+'px';t.style.top=(e.clientY+12)+'px';t.classList.add('show');}
+function ht(){document.getElementById('tip').classList.remove('show');}
+</script>
+</body>
+</html>
